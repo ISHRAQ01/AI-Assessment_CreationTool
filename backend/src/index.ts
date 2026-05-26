@@ -6,6 +6,8 @@ import { createClient } from 'redis';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import assignmentRoutes from './routes/Assignments';
+import './workers/GenerationWorker';
+import generateRoutes from './routes/Generate';
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/generate', generateRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI!)
