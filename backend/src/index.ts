@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { createClient } from 'redis';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import assignmentRoutes from './routes/Assignments';
 
 dotenv.config();
 
@@ -14,6 +15,9 @@ const wss = new WebSocketServer({ server });
 
 app.use(cors());
 app.use(express.json());
+
+// Routes
+app.use('/api/assignments', assignmentRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI!)
