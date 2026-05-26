@@ -1,15 +1,16 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import mongoose from 'mongoose';
 import { createClient } from 'redis';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import assignmentRoutes from './routes/Assignments';
 import './workers/GenerationWorker';
 import generateRoutes from './routes/Generate';
 
-dotenv.config();
+
 
 const app = express();
 const server = createServer(app);
