@@ -14,7 +14,6 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Handle WebSocket real-time updates
     if (lastMessage && lastMessage.type === 'GENERATION_COMPLETED') {
       updateAssignment(lastMessage.assignmentId, { 
         status: 'completed', 
@@ -54,123 +53,128 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-indigo-600">VedaAI</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Delhi Public School</span>
-              <span className="text-sm text-gray-500">Bokaro Steel City</span>
-            </div>
+    <div className="min-h-screen bg-white flex">
+      {/* SIDEBAR - Fixed left */}
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full">
+        <div className="p-6">
+          {/* Logo */}
+          <h1 className="text-2xl font-bold text-indigo-600 mb-8">VedaAI</h1>
+          
+          {/* Navigation */}
+          <nav className="space-y-1">
+            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Home</a>
+            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">My Groups</a>
+            <a href="#" className="block px-3 py-2 text-sm text-indigo-600 bg-indigo-50 rounded-lg font-medium">Assignments</a>
+            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">AI Teacher's Toolkit</a>
+            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">My Library</a>
+          </nav>
+
+          {/* Settings */}
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <p className="text-xs text-gray-400 mb-2">Settings</p>
+            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Settings</a>
           </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Sidebar + Main Content */}
-        <div className="flex gap-8">
-          {/* Sidebar Navigation */}
-          <aside className="w-64 flex-shrink-0">
-            <nav className="space-y-1">
-              {['Home', 'My Groups', 'Assignments', "AI Teacher's Toolkit", 'My Library'].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className={`block px-4 py-2 rounded-lg text-sm font-medium ${
-                    item === 'Assignments'
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {item}
-                </a>
-              ))}
-            </nav>
-          </aside>
+        {/* Footer */}
+        <div className="mt-auto p-6 border-t border-gray-200">
+          <p className="text-sm text-gray-600">Delhi Public School</p>
+          <p className="text-xs text-gray-400">Bokaro Steel City</p>
+        </div>
+      </div>
 
-          {/* Main Content */}
-          <main className="flex-1">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Assignments</h2>
+      {/* MAIN CONTENT */}
+      <div className="flex-1 ml-64">
+        {/* Top Bar */}
+        <div className="border-b border-gray-200 bg-white px-8 py-4 flex justify-between items-center">
+          <span className="text-sm text-gray-500">Assignments</span>
+          <span className="text-sm text-gray-600">John Doe</span>
+        </div>
+
+        {/* Content */}
+        <div className="p-8">
+          {/* Header with Create Button */}
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-semibold text-gray-900">Assignment</h2>
+            <Link
+              href="/create"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700"
+            >
+              + Create Assignment
+            </Link>
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search Assignment"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          {/* Assignments List */}
+          {isLoading ? (
+            <div className="text-center py-12 text-gray-500">Loading...</div>
+          ) : filteredAssignments.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-900 font-medium mb-2">No assignments yet</p>
+              <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
+                Create your first assignment to start collecting and grading student submissions. 
+                You can set up rubrics, define marking criteria, and let AI assist with grading.
+              </p>
               <Link
                 href="/create"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                className="text-indigo-600 text-sm font-medium hover:text-indigo-700"
               >
-                + Create Assignment
+                + Create Your First Assignment
               </Link>
             </div>
-
-            <p className="text-gray-600 mb-6">Manage and create assignments for your classes.</p>
-
-            {/* Search and Filter */}
-            <div className="mb-6">
-              <input
-                type="text"
-                placeholder="Search Assignment"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Assignments Grid */}
-            {isLoading ? (
-              <div className="text-center py-12">Loading...</div>
-            ) : filteredAssignments.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-500 mb-4">No assignments yet</p>
-                <p className="text-sm text-gray-400 mb-6">
-                  Create your first assignment to start collecting and grading student submissions.
-                </p>
-                <Link
-                  href="/create"
-                  className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
-                >
-                  Create Your First Assignment
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredAssignments.map((assignment) => (
-                  <div key={assignment._id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition">
-                    <h3 className="font-semibold text-gray-900 mb-2">{assignment.title}</h3>
-                    <div className="text-sm text-gray-500 mb-2">
-                      <div>Assign on: {new Date(assignment.createdAt).toLocaleDateString()}</div>
-                      <div>Due: {new Date(assignment.dueDate).toLocaleDateString()}</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredAssignments.map((assignment) => (
+                <div key={assignment._id} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-gray-900">{assignment.title}</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Assign on: {new Date(assignment.createdAt).toLocaleDateString()} | 
+                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        assignment.status === 'generating' ? 'bg-yellow-100 text-yellow-800' :
-                        assignment.status === 'failed' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {assignment.status}
-                      </span>
-                    </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-4">
                       {assignment.status === 'completed' && assignment.generatedPaperId && (
                         <Link
                           href={`/assignment/${assignment._id}`}
-                          className="flex-1 text-center text-indigo-600 text-sm font-medium hover:text-indigo-800"
+                          className="text-indigo-600 text-sm hover:text-indigo-800"
                         >
                           View Assignment
                         </Link>
                       )}
                       <button
                         onClick={() => handleDelete(assignment._id)}
-                        className="text-red-600 text-sm font-medium hover:text-red-800"
+                        className="text-red-500 text-sm hover:text-red-700"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </main>
+                  <div className="mt-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      assignment.status === 'generating' ? 'bg-yellow-100 text-yellow-700' :
+                      assignment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {assignment.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

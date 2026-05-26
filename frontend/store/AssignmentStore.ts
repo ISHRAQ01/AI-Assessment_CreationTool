@@ -38,13 +38,10 @@ export const useAssignmentStore = create<AssignmentStore>((set) => ({
   isLoading: false,
   
   setAssignments: (assignments) => set({ assignments }),
-  
   setCurrentAssignment: (assignment) => set({ currentAssignment: assignment }),
-  
   addAssignment: (assignment) => set((state) => ({ 
     assignments: [assignment, ...state.assignments] 
   })),
-  
   updateAssignment: (id, updates) => set((state) => ({
     assignments: state.assignments.map((a) => 
       a._id === id ? { ...a, ...updates } : a
@@ -53,10 +50,8 @@ export const useAssignmentStore = create<AssignmentStore>((set) => ({
       ? { ...state.currentAssignment, ...updates } 
       : state.currentAssignment
   })),
-  
   deleteAssignment: (id) => set((state) => ({
     assignments: state.assignments.filter((a) => a._id !== id)
   })),
-  
   setIsLoading: (loading) => set({ isLoading: loading }),
 }));
