@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Assignment, { IAssignment, IQuestionType } from '../models/Assignment';
-
+import mongoose from 'mongoose';
 
 export const createAssignment = async (req: Request, res: Response) => {
   try {
@@ -49,12 +49,19 @@ export const getAssignments = async (req: Request, res: Response) => {
 export const getAssignmentById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const assignment = await Assignment.findById(id).populate('generatedPaperId');
+    const objectId = new mongoose.Types.ObjectId(id);
+    const assignment = await Assignment.findById(objectId).populate('generatedPaperId');
+    
     if (!assignment) {
       return res.status(404).json({ success: false, message: 'Assignment not found' });
     }
+    
+    console.log('GeneratedPaperId type:', typeof assignment.generatedPaperId);
+    console.log('GeneratedPaperId value:', assignment.generatedPaperId);
+    
     res.status(200).json({ success: true, data: assignment });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
