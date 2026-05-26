@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-
+import questionPaperRoutes from './routes/QuestionPapers';
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -19,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/question-papers', questionPaperRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/generate', generateRoutes);
 
