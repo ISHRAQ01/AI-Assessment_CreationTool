@@ -1,8 +1,16 @@
 import { Worker } from 'bullmq';
 import redisClient from '../config/Redis';
+import Redis from 'ioredis';
 import Assignment from '../models/Assignment';
-import QuestionPaper, { IQuestionPaper } from '../models/QuestionPaper';
+import QuestionPaper from '../models/QuestionPaper';
 import { generateQuestionPaper } from '../services/AiService';
+
+// Separate Redis client for pub/sub
+const redisPub = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+});
+
+const JOB_COMPLETION_CHANNEL = 'job:completed';
 
 const worker = new Worker(
   'question-generation',
@@ -11,13 +19,9 @@ const worker = new Worker(
     const { assignmentId, formData } = job.data;
 
     try {
-      // Update assignment status to generating
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'generating' });
-
-      // Generate questions using AI
       const generated = await generateQuestionPaper(formData);
-
-      // Create question paper in database
+      
       const questionPaper = new QuestionPaper({
         assignmentId,
         subject: formData.subject,
@@ -29,17 +33,32 @@ const worker = new Worker(
       });
 
       const saved = await questionPaper.save();
-
-      // Update assignment with generated paper ID
       await Assignment.findByIdAndUpdate(assignmentId, {
         status: 'completed',
         generatedPaperId: saved._id,
       });
 
+      // Publish completion event for WebSocket
+      await redisPub.publish(JOB_COMPLETION_CHANNEL, JSON.stringify({
+        type: 'GENERATION_COMPLETED',
+        assignmentId,
+        questionPaperId: saved._id,
+        status: 'completed',
+      }));
+
       return { questionPaperId: saved._id };
     } catch (error) {
       console.error(`Job ${job.id} failed:`, error);
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'failed' });
+      
+      // Publish failure event
+      await redisPub.publish(JOB_COMPLETION_CHANNEL, JSON.stringify({
+        type: 'GENERATION_FAILED',
+        assignmentId,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }));
+      
       throw error;
     }
   },
