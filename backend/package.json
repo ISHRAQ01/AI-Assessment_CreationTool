@@ -11,7 +11,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "mongoose": "^8.5.1",
-    "redis": "^4.6.15",
+    "redis": "^5.1.0",
     "bullmq": "^5.7.3",
     "ws": "^8.18.0",
     "cors": "^2.8.5",
