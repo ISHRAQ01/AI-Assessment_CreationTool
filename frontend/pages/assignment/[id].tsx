@@ -86,53 +86,51 @@ export default function AssignmentOutput() {
   };
 
   const fetchQuestionPaper = async (paperId: string) => {
-  try {
-    const response = await axios.get(`/api/question-papers/${paperId}`);
-    if (response.data.success) {
-      const paper = response.data.data;
-      // Parse MCQ options from text
-      if (paper.sections) {
-        paper.sections = paper.sections.map((section: Section) => ({
-          ...section,
-          questions: section.questions.map((question: Question) => {
-            const text = question.text;
+    try {
+      const response = await axios.get(`/api/question-papers/${paperId}`);
+      if (response.data.success) {
+        const paper = response.data.data;
+        if (paper.sections) {
+          paper.sections = paper.sections.map((section: Section) => {
+            const isMcqSection = section.title.toLowerCase().includes('multiple choice') ||
+                                  (section.questions[0]?.text && /[A-D]\)/.test(section.questions[0].text));
             
-            // Check if it's an MCQ (contains A) B) C) D) pattern)
-            const optionPattern = /[A-D]\)\s*[^\n]+/g;
-            const hasOptions = optionPattern.test(text);
-            
-            if (hasOptions) {
-              // Extract options
-              const optionsMatch = text.match(/[A-D]\)\s*[^\n]+/g);
-              if (optionsMatch && optionsMatch.length >= 4) {
-                const options = optionsMatch.map(opt => opt.trim());
-                // Get question text (everything before the first option)
-                const firstOptionIndex = text.indexOf(optionsMatch[0]);
-                const cleanText = text.substring(0, firstOptionIndex).trim();
-                // Remove any [Answer: X] tag
-                const finalText = cleanText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+            const processedQuestions = section.questions.map((question: Question) => {
+              let text = question.text;
+              
+              if (isMcqSection) {
+                const optionRegex = /([A-D])\)\s*([^\n]+)/g;
+                const matches = [...text.matchAll(optionRegex)];
                 
-                return {
-                  ...question,
-                  text: finalText,
-                  options: options,
-                };
+                if (matches.length >= 4) {
+                  const options = matches.slice(0, 4).map(m => `${m[1]}) ${m[2].trim()}`);
+                  const firstOptionIndex = text.search(/\n[A-D]\)/);
+                  let questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
+                  questionText = questionText.replace(/^Question:\s*/i, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+                  
+                  return {
+                    ...question,
+                    text: questionText,
+                    options: options,
+                  };
+                }
               }
-            }
-            // Remove any answer tags from non-MCQ questions
-            const cleanText = text.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
-            return { ...question, text: cleanText };
-          })
-        }));
+              
+              const cleanText = text.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+              return { ...question, text: cleanText };
+            });
+            
+            return { ...section, questions: processedQuestions };
+          });
+        }
+        setQuestionPaper(paper);
+        setLoading(false);
       }
-      setQuestionPaper(paper);
+    } catch (error) {
+      console.error('Failed to fetch question paper:', error);
       setLoading(false);
     }
-  } catch (error) {
-    console.error('Failed to fetch question paper:', error);
-    setLoading(false);
-  }
-};
+  };
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -187,6 +185,39 @@ export default function AssignmentOutput() {
 
   const handleDownloadPDF = () => {
     handlePrint();
+  };
+
+  const handleDownloadAnswerKey = () => {
+    if (!questionPaper?.answerKey) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Answer Key - ${assignment?.title || 'Assignment'}</title>
+            <style>
+              body { font-family: 'Courier New', monospace; margin: 40px; line-height: 1.6; }
+              h1 { text-align: center; color: #333; }
+              .section { margin: 20px 0; }
+              .section-title { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; }
+              .answer { margin: 5px 0; }
+              hr { margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Answer Key</h1>
+            <p><strong>Assignment:</strong> ${assignment?.title}</p>
+            <p><strong>Subject:</strong> ${questionPaper?.subject}</p>
+            <p><strong>Class:</strong> ${questionPaper?.className}</p>
+            <hr/>
+            <pre style="font-family: 'Courier New', monospace; font-size: 14px;">${questionPaper.answerKey}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -370,25 +401,23 @@ export default function AssignmentOutput() {
                             <span className="text-gray-800">{question.text}</span>
                           </div>
                           
-                          {/* Display MCQ options if available */}
-{question.options && question.options.length > 0 && (
-  <div className="ml-6 mt-3 space-y-1.5">
-    {question.options.map((option, optIdx) => {
-      const letter = String.fromCharCode(65 + optIdx);
-      // Remove the letter prefix if already present (e.g., "A) text" -> "text")
-      let optionText = option;
-      if (optionText.match(/^[A-D]\)\s*/)) {
-        optionText = optionText.replace(/^[A-D]\)\s*/, '');
-      }
-      return (
-        <div key={optIdx} className="text-sm text-gray-700">
-          <span className="font-medium text-gray-500 mr-2">{letter}.</span>
-          <span>{optionText}</span>
-        </div>
-      );
-    })}
-  </div>
-)}
+                          {question.options && question.options.length > 0 && (
+                            <div className="ml-6 mt-3 space-y-1.5">
+                              {question.options.map((option, optIdx) => {
+                                const letter = String.fromCharCode(65 + optIdx);
+                                let optionText = option;
+                                if (optionText.match(/^[A-D]\)\s*/)) {
+                                  optionText = optionText.replace(/^[A-D]\)\s*/, '');
+                                }
+                                return (
+                                  <div key={optIdx} className="text-sm text-gray-700">
+                                    <span className="font-medium text-gray-500 mr-2">{letter}.</span>
+                                    <span>{optionText}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 ml-4">
                           <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(question.difficulty)}`}>
@@ -412,7 +441,7 @@ export default function AssignmentOutput() {
           </div>
         </div>
 
-        {/* Answer Key Section - Hidden by default, toggle to view */}
+        {/* Answer Key Section - Section-wise with Download */}
         {questionPaper.answerKey && (
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
             <button
@@ -423,11 +452,20 @@ export default function AssignmentOutput() {
                 <Award size={20} className="text-yellow-400" />
                 <h2 className="text-lg font-semibold text-white">Answer Key (Teacher Only)</h2>
               </div>
-              <ChevronDown size={20} className={`text-white transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownloadAnswerKey(); }}
+                  className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm transition"
+                >
+                  <Download size={14} />
+                  Download PDF
+                </button>
+                <ChevronDown size={20} className={`text-white transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
+              </div>
             </button>
             {showAnswerKey && (
-              <div className="p-6">
-                <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
+              <div className="p-6 bg-gray-50">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed">
                   {questionPaper.answerKey}
                 </pre>
               </div>

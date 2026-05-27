@@ -285,17 +285,17 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
         const assignmentId = response.data.data._id;
         
         await axios.post('/api/generate', {
-          assignmentId,
-          formData: {
-            title: formData.title,
-            subject: formData.subject,
-            className: formData.className,
-            timeAllowed: formData.timeAllowed,
-            totalMarks,
-            questionTypes: formData.questionTypes,
-            additionalInstructions: finalInstructions,
-          }
-        });
+  assignmentId,
+  formData: {
+    title: formData.title, 
+    subject: formData.subject,
+    className: formData.className,
+    timeAllowed: formData.timeAllowed,
+    totalMarks,
+    questionTypes: formData.questionTypes,
+    additionalInstructions: finalInstructions,
+  }
+});
         
         router.push('/');
       }

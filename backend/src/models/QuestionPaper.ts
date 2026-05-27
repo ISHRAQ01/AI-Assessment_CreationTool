@@ -7,8 +7,8 @@ export interface IQuestion {
 }
 
 export interface ISection {
-  title: string;        
-  instruction: string;  
+  title: string;
+  instruction: string;
   questions: IQuestion[];
 }
 
@@ -16,10 +16,10 @@ export interface IQuestionPaper extends Document {
   assignmentId: mongoose.Types.ObjectId;
   subject: string;
   className: string;
-  timeAllowed: number;   
+  timeAllowed: number;
   maxMarks: number;
   sections: ISection[];
-  answerKey?: string;    
+  answerKey?: string;
   createdAt: Date;
 }
 
@@ -32,17 +32,17 @@ const QuestionSchema = new Schema<IQuestion>({
 const SectionSchema = new Schema<ISection>({
   title: { type: String, required: true },
   instruction: { type: String, required: true },
-  questions: { type: [QuestionSchema], required: true }
+  questions: { type: [QuestionSchema], required: true, default: [] }
 });
 
 const QuestionPaperSchema = new Schema<IQuestionPaper>({
   assignmentId: { type: Schema.Types.ObjectId, ref: 'Assignment', required: true },
   subject: { type: String, required: true },
   className: { type: String, required: true },
-  timeAllowed: { type: Number, required: true },
+  timeAllowed: { type: Number, required: true, default: 45 },
   maxMarks: { type: Number, required: true },
-  sections: { type: [SectionSchema], required: true },
-  answerKey: { type: String }
+  sections: { type: [SectionSchema], required: true, default: [] },
+  answerKey: { type: String, default: '' }
 }, { timestamps: true });
 
 export default mongoose.model<IQuestionPaper>('QuestionPaper', QuestionPaperSchema);

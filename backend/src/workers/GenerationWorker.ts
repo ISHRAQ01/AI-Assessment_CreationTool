@@ -1,63 +1,201 @@
 import { Worker } from 'bullmq';
 import redisClient from '../config/Redis';
-import Redis from 'ioredis';
 import Assignment from '../models/Assignment';
 import QuestionPaper from '../models/QuestionPaper';
 import { generateQuestionPaper } from '../services/AiService';
 
-// Separate Redis client for pub/sub
-const redisPub = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+import Redis from 'ioredis';
+const redisPublisher = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: null,
 });
 
 const JOB_COMPLETION_CHANNEL = 'job:completed';
 
-const worker = new Worker(
+interface IQuestion {
+  text: string;
+  difficulty: string;
+  marks: number;
+}
+
+interface ISection {
+  title: string;
+  instruction: string;
+  questions: IQuestion[];
+}
+
+interface IGeneratedResponse {
+  sections: Array<{
+    title?: string;
+    instruction?: string;
+    questions?: Array<{
+      text?: string;
+      difficulty?: string;
+      marks?: number;
+    }>;
+  }>;
+  answerKey?: string;
+}
+
+interface JobData {
+  assignmentId: string;
+  formData: {
+    title: string;
+    subject: string;
+    className: string;
+    timeAllowed: number;
+    totalMarks: number;
+    questionTypes: Array<{ type: string; numberOfQuestions: number; marksPerQuestion: number }>;
+    additionalInstructions?: string;
+  };
+}
+
+const worker = new Worker<JobData>(
   'question-generation',
   async (job) => {
     console.log(`Processing job ${job.id}`);
     const { assignmentId, formData } = job.data;
 
     try {
+      // Update assignment status to generating
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'generating' });
-      const generated = await generateQuestionPaper(formData);
+
+      // Generate questions using AI
+      const generated: IGeneratedResponse = await generateQuestionPaper(formData);
+      console.log('AI Response received');
+
+      // Validate and clean sections
+      let validSections: ISection[] = [];
+      if (generated.sections && Array.isArray(generated.sections)) {
+        validSections = generated.sections
+          .filter((section) => section && section.questions && Array.isArray(section.questions) && section.questions.length > 0)
+          .map((section) => ({
+            title: section.title || 'Untitled Section',
+            instruction: section.instruction || 'Attempt all questions',
+            questions: (section.questions || [])
+              .filter((q) => q && typeof q.text === 'string' && q.text.trim().length > 0)
+              .map((q) => ({
+                text: q.text?.trim() || '',
+                difficulty: q.difficulty || 'Moderate',
+                marks: q.marks || 2,
+              })),
+          }));
+      }
+
+      if (validSections.length === 0) throw new Error('No valid sections generated');
+
+      console.log(`Valid sections: ${validSections.length}`);
+      console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
+
+      // ============================================================
+      // 🔧 Parse AI's answerKey to extract answers for all questions
+      // ============================================================
+      let answerMap: Map<number, string> = new Map();
       
+      if (generated.answerKey) {
+        // Parse answerKey lines like "1. C", "2. The role of insulin is...", etc.
+        const lines = generated.answerKey.split('\n');
+        for (const line of lines) {
+          const match = line.match(/^(\d+)\.\s+(.+)$/);
+          if (match) {
+            const qNum = parseInt(match[1]);
+            const answer = match[2].trim();
+            answerMap.set(qNum, answer);
+          }
+        }
+        console.log(`📋 Parsed ${answerMap.size} answers from AI response`);
+      }
+      
+      // ============================================================
+      // 🔧 Generate SECTION-WISE Answer Key with actual answers
+      // ============================================================
+      let sectionWiseAnswerKey = '';
+      let globalQuestionNumber = 1;
+      
+      for (let s = 0; s < validSections.length; s++) {
+        const section = validSections[s];
+        const isMcqSection = section.title.toLowerCase().includes('multiple choice');
+        
+        sectionWiseAnswerKey += `\n${'='.repeat(60)}\n`;
+        sectionWiseAnswerKey += `${section.title}\n`;
+        sectionWiseAnswerKey += `${'='.repeat(60)}\n`;
+        
+        for (let q = 0; q < section.questions.length; q++) {
+          const question = section.questions[q];
+          let answer = '';
+          
+          // First check if we have answer from AI's answerKey
+          if (answerMap.has(globalQuestionNumber)) {
+            answer = answerMap.get(globalQuestionNumber) || '';
+          }
+          
+          // If no answer found, try to extract from MCQ text
+          if (!answer && isMcqSection) {
+            const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
+            if (answerMatch) {
+              answer = answerMatch[1];
+            }
+          }
+          
+          // If still no answer, provide appropriate placeholder
+          if (!answer) {
+            if (isMcqSection) {
+              answer = 'Not specified in question';
+            } else {
+              answer = 'Answer will vary based on student response. Expected key points: The answer should cover the main concepts related to the question.';
+            }
+          }
+          
+          sectionWiseAnswerKey += `${q + 1}. ${answer}\n`;
+          globalQuestionNumber++;
+        }
+      }
+      
+      const finalAnswerKey = sectionWiseAnswerKey;
+
+      // Create question paper in database
       const questionPaper = new QuestionPaper({
         assignmentId,
         subject: formData.subject,
         className: formData.className,
         timeAllowed: formData.timeAllowed || 45,
         maxMarks: formData.totalMarks,
-        sections: generated.sections,
-        answerKey: generated.answerKey,
+        sections: validSections,
+        answerKey: finalAnswerKey,
       });
 
       const saved = await questionPaper.save();
+      console.log(`✅ Question paper saved with ID: ${saved._id}`);
+
+      // Update assignment with generated paper ID
       await Assignment.findByIdAndUpdate(assignmentId, {
         status: 'completed',
         generatedPaperId: saved._id,
       });
 
-      // Publish completion event for WebSocket
-      await redisPub.publish(JOB_COMPLETION_CHANNEL, JSON.stringify({
+      // 🔥 Publish completion event for WebSocket
+      const completionEvent = JSON.stringify({
         type: 'GENERATION_COMPLETED',
-        assignmentId,
+        assignmentId: assignmentId,
         questionPaperId: saved._id,
-        status: 'completed',
-      }));
+        status: 'completed'
+      });
+      
+      await redisPublisher.publish(JOB_COMPLETION_CHANNEL, completionEvent);
+      console.log(`📡 Published completion event for assignment ${assignmentId}`);
 
       return { questionPaperId: saved._id };
     } catch (error) {
-      console.error(`Job ${job.id} failed:`, error);
+      console.error(`❌ Job ${job.id} failed:`, error);
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'failed' });
       
       // Publish failure event
-      await redisPub.publish(JOB_COMPLETION_CHANNEL, JSON.stringify({
+      const failureEvent = JSON.stringify({
         type: 'GENERATION_FAILED',
-        assignmentId,
+        assignmentId: assignmentId,
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      await redisPublisher.publish(JOB_COMPLETION_CHANNEL, failureEvent);
       
       throw error;
     }
