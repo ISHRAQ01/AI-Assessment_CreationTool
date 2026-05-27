@@ -97,6 +97,12 @@ export default function AssignmentOutput() {
             const processedQuestions = section.questions.map((question: Question) => {
               let text = question.text;
               
+              // Remove "Short question:" prefix if present
+              text = text.replace(/^Short question:\s*/i, '');
+              text = text.replace(/^Short question\s*/i, '');
+              text = text.replace(/^Numerical problem:\s*/i, '');
+              text = text.replace(/^Diagram question:\s*/i, '');
+              
               if (isMcqSection) {
                 // Replace literal \n with actual line breaks
                 text = text.replace(/\\n/g, '\n');
@@ -119,6 +125,7 @@ export default function AssignmentOutput() {
                 }
               }
               
+              // Clean non-MCQ questions
               const cleanText = text.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
               return { ...question, text: cleanText };
             });
@@ -402,12 +409,10 @@ export default function AssignmentOutput() {
                               {qIdx + 1}.
                             </span>
                             <div className="flex-1">
-                              {/* Question text with line breaks */}
                               <div className="text-gray-800 whitespace-pre-line">
                                 {question.text}
                               </div>
                               
-                              {/* Display MCQ options if available */}
                               {question.options && question.options.length > 0 && (
                                 <div className="mt-3 ml-4 space-y-1.5">
                                   {question.options.map((option, optIdx) => {
