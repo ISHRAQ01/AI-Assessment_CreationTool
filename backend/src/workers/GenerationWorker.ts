@@ -49,28 +49,119 @@ interface JobData {
   };
 }
 
-// Helper function to generate an answer from a question
-function generateAnswerFromQuestion(questionText: string, questionType: string): string {
-  const lowerQuestion = questionText.toLowerCase();
+// Helper: Calculate numerical answers
+function calculateNumericalAnswer(questionText: string): string {
+  const lowerText = questionText.toLowerCase();
   
-  // For "What is..." questions
-  if (lowerQuestion.includes('what is')) {
-    const topic = questionText.replace(/What is/i, '').replace(/\?/g, '').trim();
-    return `${topic} is a fundamental concept in ${topic.split(' ')[0]}. The specific definition depends on context. (Teacher to provide detailed answer based on course material)`;
+  // Matrix determinant 2x2: [[a, b], [c, d]] => ad - bc
+  const matrixDetMatch = lowerText.match(/determinant.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
+  if (matrixDetMatch) {
+    const a = parseInt(matrixDetMatch[1]);
+    const b = parseInt(matrixDetMatch[2]);
+    const c = parseInt(matrixDetMatch[3]);
+    const d = parseInt(matrixDetMatch[4]);
+    const result = (a * d) - (b * c);
+    return `${result}`;
   }
   
-  // For "How do you..." questions
-  if (lowerQuestion.includes('how do you')) {
-    return `The process involves several steps. (Teacher to provide the specific method based on course material)`;
+  // Matrix inverse 2x2: [[a, b], [c, d]]
+  const matrixInvMatch = lowerText.match(/inverse.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
+  if (matrixInvMatch) {
+    const a = parseInt(matrixInvMatch[1]);
+    const b = parseInt(matrixInvMatch[2]);
+    const c = parseInt(matrixInvMatch[3]);
+    const d = parseInt(matrixInvMatch[4]);
+    const det = (a * d) - (b * c);
+    if (det !== 0) {
+      return `[${d/det}, ${-b/det}; ${-c/det}, ${a/det}]`;
+    }
+    return "Matrix is singular (determinant = 0), inverse does not exist";
   }
   
-  // For mathematical concepts
-  if (lowerQuestion.includes('matrix') || lowerQuestion.includes('vector') || lowerQuestion.includes('linear')) {
-    return `This is a key concept in linear algebra. The answer involves understanding the mathematical properties and relationships. (Teacher to provide detailed explanation)`;
+  // Matrix rank
+  const rankMatch = lowerText.match(/rank.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
+  if (rankMatch) {
+    const a = parseInt(rankMatch[1]);
+    const b = parseInt(rankMatch[2]);
+    const c = parseInt(rankMatch[3]);
+    const d = parseInt(rankMatch[4]);
+    const det = (a * d) - (b * c);
+    if (det !== 0) return "2 (full rank)";
+    if (a !== 0 || b !== 0 || c !== 0 || d !== 0) return "1";
+    return "0";
   }
   
-  // Default intelligent fallback
-  return `Answer to: "${questionText.substring(0, 100)}..." (Teacher to provide detailed answer based on course material and marking scheme)`;
+  // Linear equation: 2x + 5 = 11
+  const equationMatch = lowerText.match(/(\d+)x\s*\+\s*(\d+)\s*=\s*(\d+)/i);
+  if (equationMatch) {
+    const a = parseInt(equationMatch[1]);
+    const b = parseInt(equationMatch[2]);
+    const c = parseInt(equationMatch[3]);
+    const result = (c - b) / a;
+    return `x = ${result}`;
+  }
+  
+  // Simple equation: x + 5 = 10
+  const simpleEqMatch = lowerText.match(/x\s*\+\s*(\d+)\s*=\s*(\d+)/i);
+  if (simpleEqMatch) {
+    const b = parseInt(simpleEqMatch[1]);
+    const c = parseInt(simpleEqMatch[2]);
+    const result = c - b;
+    return `x = ${result}`;
+  }
+  
+  // Area of rectangle
+  const rectMatch = lowerText.match(/rectangle.*?(\d+).*?(\d+)/i);
+  if (rectMatch && lowerText.includes('area')) {
+    const l = parseFloat(rectMatch[1]);
+    const w = parseFloat(rectMatch[2]);
+    return `${l * w} square units`;
+  }
+  
+  // Speed calculation
+  const speedMatch = lowerText.match(/(\d+)\s*(?:km|kilometers).*?(\d+)\s*(?:hours?|h)/i);
+  if (speedMatch && (lowerText.includes('speed') || lowerText.includes('average speed'))) {
+    const distance = parseFloat(speedMatch[1]);
+    const time = parseFloat(speedMatch[2]);
+    return `${distance / time} km/h`;
+  }
+  
+  // Volume of box
+  const volumeMatch = lowerText.match(/box.*?(\d+).*?(\d+).*?(\d+)/i);
+  if (volumeMatch && lowerText.includes('volume')) {
+    const l = parseFloat(volumeMatch[1]);
+    const w = parseFloat(volumeMatch[2]);
+    const h = parseFloat(volumeMatch[3]);
+    return `${l * w * h} cubic units`;
+  }
+  
+  return `[Calculate: ${questionText.substring(0, 100)}]`;
+}
+
+// Helper: Generate short answer
+function generateShortAnswer(questionText: string, subject: string): string {
+  const lowerText = questionText.toLowerCase();
+  
+  if (lowerText.includes('matrix')) {
+    if (lowerText.includes('determinant')) {
+      return `The determinant is a scalar value that can be computed from a square matrix. For a 2x2 matrix [[a, b], [c, d]], the determinant is ad - bc.`;
+    }
+    if (lowerText.includes('inverse')) {
+      return `The inverse of a matrix A is a matrix A⁻¹ such that A × A⁻¹ = I (identity matrix). For a 2x2 matrix [[a, b], [c, d]] with determinant ≠ 0, the inverse is (1/det) × [[d, -b], [-c, a]].`;
+    }
+    if (lowerText.includes('rank')) {
+      return `The rank of a matrix is the maximum number of linearly independent rows or columns. It indicates the dimension of the vector space spanned by the matrix.`;
+    }
+    if (lowerText.includes('nullity')) {
+      return `Nullity is the dimension of the null space of a matrix. By the rank-nullity theorem: rank + nullity = number of columns.`;
+    }
+  }
+  
+  if (lowerText.includes('linear equation') || lowerText.includes('equation')) {
+    return `A linear equation is an equation where variables appear only to the first power. For example, 2x + 5 = 11 solves to x = 3.`;
+  }
+  
+  return `Answer: ${questionText.substring(0, 80)}... (Teacher to evaluate based on course material)`;
 }
 
 const worker = new Worker<JobData>(
@@ -108,46 +199,15 @@ const worker = new Worker<JobData>(
       console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
 
       // ============================================================
-      // 🔧 Parse AI's answerKey
-      // ============================================================
-      let answerMap: Map<number, string> = new Map();
-
-      if (generated.answerKey) {
-        let cleanAnswerKey = generated.answerKey.replace(/\\n/g, '\n');
-        const lines = cleanAnswerKey.split('\n');
-        
-        for (const line of lines) {
-          const match = line.match(/^(\d+)\.\s+(.+)$/);
-          if (match) {
-            const qNum = parseInt(match[1]);
-            let answer = match[2].trim();
-            answer = answer.replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
-            
-            // Check if this is a placeholder answer
-            const isPlaceholder = answer.includes('Model answer for') || 
-                                  answer.includes('Teacher should provide') ||
-                                  answer.includes('should be provided by teacher');
-            
-            if (!answerMap.has(qNum) && !isPlaceholder) {
-              answerMap.set(qNum, answer);
-            }
-          }
-        }
-        console.log(`📋 Parsed ${answerMap.size} real answers from AI response`);
-      }
-
-      // ============================================================
-      // 🔧 Generate SECTION-WISE Answer Key with intelligent answers
+      // 🔧 Generate Answer Key with calculated answers
       // ============================================================
       let sectionWiseAnswerKey = '';
-      let globalQuestionNumber = 1;
 
       for (let s = 0; s < validSections.length; s++) {
         const section = validSections[s];
         const isMcqSection = section.title.toLowerCase().includes('multiple choice');
         const isShortSection = section.title.toLowerCase().includes('short');
         const isNumericalSection = section.title.toLowerCase().includes('numerical');
-        const isDiagramSection = section.title.toLowerCase().includes('diagram') || section.title.toLowerCase().includes('graph');
         
         sectionWiseAnswerKey += `\n${'='.repeat(60)}\n`;
         sectionWiseAnswerKey += `${section.title}\n`;
@@ -157,49 +217,21 @@ const worker = new Worker<JobData>(
           const question = section.questions[q];
           let answer = '';
           
-          // Try to get answer from AI's answerKey
-          if (answerMap.has(globalQuestionNumber)) {
-            answer = answerMap.get(globalQuestionNumber) || '';
-          }
-          
-          // For MCQ: Extract answer from question text
-          if ((!answer || answer.length > 2) && isMcqSection) {
+          if (isMcqSection) {
             const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
-            if (answerMatch) {
-              answer = answerMatch[1];
-            }
+            answer = answerMatch ? answerMatch[1] : 'Refer to question options';
+          } 
+          else if (isNumericalSection) {
+            answer = calculateNumericalAnswer(question.text);
           }
-          
-          // For Short Questions: Generate intelligent answer if missing
-          if ((!answer || answer.includes('Model answer for') || answer.includes('Teacher should provide')) && isShortSection) {
-            answer = generateAnswerFromQuestion(question.text, 'short');
+          else if (isShortSection) {
+            answer = generateShortAnswer(question.text, formData.subject);
           }
-          
-          // For Numerical: Generate note if missing
-          if ((!answer || answer === 'A' || answer.length < 3) && isNumericalSection) {
-            answer = `[Numerical answer to be calculated: ${question.text.substring(0, 80)}...]`;
-          }
-          
-          // For Diagram: Generate description if missing
-          if ((!answer || answer === 'A' || answer.length < 5) && isDiagramSection) {
-            answer = `[Diagram should illustrate: ${question.text.substring(0, 80)}...]`;
-          }
-          
-          // Final fallback
-          if (!answer) {
-            if (isMcqSection) {
-              answer = 'Correct option as indicated in question';
-            } else if (isNumericalSection) {
-              answer = 'Calculate using standard formula';
-            } else if (isDiagramSection) {
-              answer = 'Draw as described in question';
-            } else {
-              answer = `Answer to question ${globalQuestionNumber} (Teacher to evaluate based on student response)`;
-            }
+          else {
+            answer = `Answer to question ${q+1}`;
           }
           
           sectionWiseAnswerKey += `${q + 1}. ${answer}\n`;
-          globalQuestionNumber++;
         }
         
         sectionWiseAnswerKey += `\n`;
