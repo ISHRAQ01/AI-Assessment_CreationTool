@@ -97,17 +97,17 @@ export default function AssignmentOutput() {
             const processedQuestions = section.questions.map((question: Question) => {
               let text = question.text;
               
-              // Remove "Short question:" prefix if present
+              // Replace literal \n with actual line breaks for display
+              text = text.replace(/\\n/g, '\n');
+              
+              // Remove prefixes
               text = text.replace(/^Short question:\s*/i, '');
               text = text.replace(/^Short question\s*/i, '');
               text = text.replace(/^Numerical problem:\s*/i, '');
               text = text.replace(/^Diagram question:\s*/i, '');
+              text = text.replace(/^Question:\s*/i, '');
               
               if (isMcqSection) {
-                // Replace literal \n with actual line breaks
-                text = text.replace(/\\n/g, '\n');
-                
-                // Extract options using regex
                 const optionRegex = /([A-D]\))\s*([^\n]+)/g;
                 const matches = [...text.matchAll(optionRegex)];
                 
@@ -115,7 +115,7 @@ export default function AssignmentOutput() {
                   const options = matches.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
                   const firstOptionIndex = text.search(/\n[A-D]\)/);
                   let questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
-                  questionText = questionText.replace(/^Question:\s*/i, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+                  questionText = questionText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
                   
                   return {
                     ...question,
@@ -409,6 +409,7 @@ export default function AssignmentOutput() {
                               {qIdx + 1}.
                             </span>
                             <div className="flex-1">
+                              {/* Use whitespace-pre-line to handle \n correctly */}
                               <div className="text-gray-800 whitespace-pre-line">
                                 {question.text}
                               </div>

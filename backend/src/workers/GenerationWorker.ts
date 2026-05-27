@@ -93,16 +93,71 @@ const worker = new Worker<JobData>(
       console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
 
       // ============================================================
-      // 🔧 USE AI'S ORIGINAL ANSWER KEY
+      // 🔧 PARSE AI's ANSWER KEY
       // ============================================================
-      let finalAnswerKey = '';
-
+      let aiAnswers: Map<number, string> = new Map();
+      
       if (generated.answerKey) {
-        finalAnswerKey = generated.answerKey.replace(/\\n/g, '\n');
-        console.log('📋 Using AI-generated answer key');
-      } else {
-        finalAnswerKey = 'Answer key not available';
+        const cleanKey = generated.answerKey.replace(/\\n/g, '\n');
+        const lines = cleanKey.split('\n');
+        for (const line of lines) {
+          const match = line.match(/^(\d+)\.\s+(.+)$/);
+          if (match) {
+            const qNum = parseInt(match[1]);
+            let answer = match[2].trim();
+            answer = answer.replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+            aiAnswers.set(qNum, answer);
+          }
+        }
+        console.log(`📋 Retrieved ${aiAnswers.size} answers from AI`);
       }
+
+      // ============================================================
+      // 🔧 Generate SECTION-WISE Answer Key with proper dividers
+      // ============================================================
+      let sectionWiseAnswerKey = '';
+      let globalQuestionNumber = 1;
+
+      for (let s = 0; s < validSections.length; s++) {
+        const section = validSections[s];
+        const isMcqSection = section.title.toLowerCase().includes('multiple choice');
+        
+        // Add section header
+        sectionWiseAnswerKey += `\n${'='.repeat(60)}\n`;
+        sectionWiseAnswerKey += `${section.title}\n`;
+        sectionWiseAnswerKey += `${'='.repeat(60)}\n`;
+        
+        for (let q = 0; q < section.questions.length; q++) {
+          const question = section.questions[q];
+          let answer = '';
+          
+          // Get answer from AI's answerKey
+          if (aiAnswers.has(globalQuestionNumber)) {
+            answer = aiAnswers.get(globalQuestionNumber) || '';
+          }
+          
+          // For MCQ, try to extract from question text if not found
+          if (!answer && isMcqSection) {
+            const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
+            if (answerMatch) {
+              answer = answerMatch[1];
+            }
+          }
+          
+          // Final fallback
+          if (!answer) {
+            answer = 'Answer not available';
+          }
+          
+          sectionWiseAnswerKey += `${q + 1}. ${answer}\n`;
+          globalQuestionNumber++;
+        }
+        
+        // Add empty line between sections
+        sectionWiseAnswerKey += `\n`;
+      }
+
+      const finalAnswerKey = sectionWiseAnswerKey;
 
       const questionPaper = new QuestionPaper({
         assignmentId,
