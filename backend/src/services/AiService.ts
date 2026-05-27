@@ -17,7 +17,6 @@ export async function generateQuestionPaper(params: GenerateParams) {
   const totalSections = params.questionTypes.length;
   const totalQuestions = params.questionTypes.reduce((sum, qt) => sum + qt.numberOfQuestions, 0);
 
-  // Check for file content
   const hasFileContent = params.additionalInstructions ? params.additionalInstructions.includes('--- FILE CONTENT START ---') : false;
   let fileContentText = '';
   let userInstructions = params.additionalInstructions || '';
@@ -30,45 +29,53 @@ export async function generateQuestionPaper(params: GenerateParams) {
     }
   }
 
-  let prompt = `You are an expert exam paper generator. Create a complete question paper with SEPARATE sections for EACH question type.
+  let sectionsList = '';
+  for (let i = 0; i < params.questionTypes.length; i++) {
+    const qt = params.questionTypes[i];
+    const sectionLetter = String.fromCharCode(65 + i);
+    sectionsList += `   Section ${sectionLetter}: ${qt.type} (${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each)\n`;
+  }
+
+  let prompt = `You are an expert exam paper generator. Create a complete question paper with questions AND their correct answers.
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    CRITICAL: YOU MUST PROVIDE REAL ANSWERS                     ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+For EVERY question you generate, you MUST provide the REAL correct answer in the answerKey field.
+- For Multiple Choice Questions: Provide the correct letter (A, B, C, or D)
+- For Short Questions: Write a complete 2-3 sentence model answer
+- For Numerical Problems: Calculate and provide the final number with units
+- For Diagram Questions: Describe what the diagram should show
+
+DO NOT use placeholders like "Answer will vary", "Teacher should provide", or "Model answer for...".
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CRITICAL: SECTION STRUCTURE
+EXACT SECTION ORDER (MUST FOLLOW)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-You MUST create EXACTLY ${totalSections} sections - one for EACH question type.
-Do NOT mix different question types in the same section.
-Do NOT create extra sections.
+${sectionsList}
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUESTION SOURCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
   if (fileContentText) {
-    prompt += `⚠️ **CRITICAL INSTRUCTION**: Generate questions **ONLY** based on the following uploaded file content. 
-Do **NOT** use your own knowledge or generate questions about topics not explicitly mentioned in the file.
+    prompt += `Generate questions based ONLY on this content:
 
---- FILE CONTENT (USE THIS EXCLUSIVELY) ---
+--- CONTENT ---
 ${fileContentText}
---- END FILE CONTENT ---
+--- END CONTENT ---
 
 `;
   } else {
-    prompt += `Generate questions based on the assignment title and subject.\n`;
+    prompt += `Generate questions about: "${params.title}" for ${params.subject} class ${params.className}\n`;
   }
 
   prompt += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BASIC INFORMATION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Assignment Title: ${params.title}
-Subject: ${params.subject}
-Class: ${params.className}
-Total Marks: ${params.totalMarks}
-Total Questions: ${totalQuestions}
-
-${userInstructions ? `Additional Instructions: ${userInstructions}` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REQUIRED SECTIONS (CREATE EXACTLY ${totalSections} SECTIONS)
+FORMAT RULES BY QUESTION TYPE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 `;
@@ -76,59 +83,61 @@ REQUIRED SECTIONS (CREATE EXACTLY ${totalSections} SECTIONS)
   for (let i = 0; i < params.questionTypes.length; i++) {
     const qt = params.questionTypes[i];
     const sectionLetter = String.fromCharCode(65 + i);
-    prompt += `Section ${sectionLetter}: ${qt.type} (${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each)\n`;
-  }
-
-  prompt += `\n`;
-
-  for (let i = 0; i < params.questionTypes.length; i++) {
-    const qt = params.questionTypes[i];
-    const sectionLetter = String.fromCharCode(65 + i);
     
-    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    prompt += `INSTRUCTIONS FOR SECTION ${sectionLetter} - ${qt.type}\n`;
-    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    prompt += `SECTION ${sectionLetter}: ${qt.type}\n`;
     
     if (qt.type === 'Multiple Choice Questions') {
-      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Multiple Choice Questions.
-      
-Each MCQ MUST follow this EXACT format in the "text" field:
-Question: [your question]?
-A) [option 1]
-B) [option 2]
-C) [option 3]
-D) [option 4]
-[Answer: X]
-
-Example:
-Question: What is the capital of France?
-A) London
-B) Berlin
-C) Paris
-D) Madrid
-[Answer: C]
-
-IMPORTANT: Use \\n for line breaks. Do NOT put options on the same line as the question.\n\n`;
+      prompt += `   Each MCQ question text MUST include:
+   Question: [question]?
+   A) [option]
+   B) [option]
+   C) [option]
+   D) [option]
+   [Answer: X]
+   
+   Example:
+   Question: What is 2+2?
+   A) 3
+   B) 4
+   C) 5
+   D) 6
+   [Answer: B]
+   
+`;
     } 
     else if (qt.type === 'Short Questions') {
-      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Short Answer Questions.
-Each question should be a clear, concise question expecting a written answer.
-Do NOT include options or answer tags in the question text.
-Example: Explain the process of photosynthesis.\n\n`;
-    }
-    else if (qt.type === 'Diagram/Graph-Based Questions') {
-      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Diagram/Graph based questions.
-Example: Draw a labeled diagram of the human heart.\n\n`;
+      prompt += `   Each Short Question: Plain question text without options.
+   In answerKey, write a REAL 2-3 sentence answer.
+   
+   Example question: Explain the process of photosynthesis.
+   Example answer in answerKey: Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen. It occurs in the chloroplasts and is essential for plant growth.
+   
+`;
     }
     else if (qt.type === 'Numerical Problems') {
-      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Numerical Problems.
-Example: A car travels 120 km in 2 hours. Calculate its speed.\n\n`;
+      prompt += `   Each Numerical Problem: Provide the problem statement.
+   In answerKey, calculate and provide the ACTUAL number with units.
+   
+   Example question: A car travels 120 km in 2 hours. Calculate its speed.
+   Example answer in answerKey: 60 km/h
+   
+`;
     }
+    else if (qt.type === 'Diagram/Graph-Based Questions') {
+      prompt += `   Each Diagram Question: Describe what to draw.
+   In answerKey, describe what the correct diagram should show.
+   
+   Example question: Draw a labeled diagram of the human heart.
+   Example answer in answerKey: A diagram showing the four chambers: right atrium, right ventricle, left atrium, left ventricle, with labeled blood vessels (aorta, pulmonary artery, vena cava).
+   
+`;
+    }
+    prompt += `\n`;
   }
 
   prompt += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-JSON OUTPUT STRUCTURE - EXACTLY ${totalSections} SECTIONS
+JSON OUTPUT STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {
@@ -145,20 +154,33 @@ JSON OUTPUT STRUCTURE - EXACTLY ${totalSections} SECTIONS
       "instruction": "Attempt all questions. Each question carries ${qt.marksPerQuestion} marks.",
       "questions": [`;
 
-    // Add example questions
     for (let j = 0; j < qt.numberOfQuestions; j++) {
       if (qt.type === 'Multiple Choice Questions') {
         prompt += `
         {
-          "text": "Question: Sample MCQ question ${j+1}?\\\\nA) Option A\\\\nB) Option B\\\\nC) Option C\\\\nD) Option D\\\\n[Answer: A]",
-          "difficulty": "${j === 0 ? 'Easy' : j === 1 ? 'Moderate' : 'Challenging'}",
+          "text": "Question: Question ${j+1}?\\\\nA) Option A\\\\nB) Option B\\\\nC) Option C\\\\nD) Option D\\\\n[Answer: A]",
+          "difficulty": "Easy",
+          "marks": ${qt.marksPerQuestion}
+        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
+      } else if (qt.type === 'Short Questions') {
+        prompt += `
+        {
+          "text": "Short question ${j+1}: What is the main concept?",
+          "difficulty": "Easy",
+          "marks": ${qt.marksPerQuestion}
+        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
+      } else if (qt.type === 'Numerical Problems') {
+        prompt += `
+        {
+          "text": "Numerical problem ${j+1}: Calculate the value.",
+          "difficulty": "Easy",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
       } else {
         prompt += `
         {
-          "text": "Sample ${qt.type.toLowerCase()} question ${j+1}.",
-          "difficulty": "${j === 0 ? 'Easy' : j === 1 ? 'Moderate' : 'Challenging'}",
+          "text": "${qt.type} question ${j+1}.",
+          "difficulty": "Easy",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
       }
@@ -169,24 +191,42 @@ JSON OUTPUT STRUCTURE - EXACTLY ${totalSections} SECTIONS
     }${i < params.questionTypes.length - 1 ? ',' : ''}`;
   }
 
+  // Build answer key example with real answers
+  let answerKeyExample = '"';
+  let counter = 1;
+  for (const qt of params.questionTypes) {
+    for (let j = 0; j < qt.numberOfQuestions; j++) {
+      if (qt.type === 'Multiple Choice Questions') {
+        answerKeyExample += `${counter}. A`;
+      } else if (qt.type === 'Short Questions') {
+        answerKeyExample += `${counter}. This is a real model answer that directly answers the question with 2-3 complete sentences.`;
+      } else if (qt.type === 'Numerical Problems') {
+        answerKeyExample += `${counter}. 42 units`;
+      } else {
+        answerKeyExample += `${counter}. The diagram should show the key components as described.`;
+      }
+      answerKeyExample += counter < totalQuestions ? '\\n' : '';
+      counter++;
+    }
+  }
+  answerKeyExample += '"';
+
   prompt += `
   ],
-  "answerKey": "1. Answer for first question\\\\n2. Answer for second question\\\\n3. Answer for third question\\\\n..."
+  "answerKey": ${answerKeyExample}
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CRITICAL RULES - MUST FOLLOW EXACTLY
+FINAL INSTRUCTIONS - READ CAREFULLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Create EXACTLY ${totalSections} sections - NO MORE, NO LESS.
-2. Each section must contain ONLY its designated question type.
-3. Section titles MUST be in format "Section X - Question Type"
-4. For MCQ: Include 4 options (A, B, C, D) and [Answer: X] with \\n line breaks.
-5. For non-MCQ: NO options, just the question text.
-6. The answerKey must contain ${totalQuestions} answers, numbered 1 to ${totalQuestions}.
-7. For MCQ answers, use just the letter (e.g., "1. C").
-8. For short questions, write a brief model answer (2-3 sentences).
-9. Return ONLY valid JSON. No extra text.
+1. Create EXACTLY ${totalSections} sections in the order shown above.
+2. For EACH question, generate REAL, SPECIFIC answers in the answerKey field.
+3. For Numerical Problems: DO NOT write formulas. Write the ACTUAL CALCULATED NUMBER.
+4. For Short Questions: DO NOT write "Answer will vary". Write REAL model answers.
+5. For Diagram Questions: DO NOT write "Diagram should show". Write WHAT it should show.
+6. The answerKey MUST have ${totalQuestions} entries numbered 1 to ${totalQuestions}.
+7. Return ONLY valid JSON. No extra text before or after.
 `;
 
   try {
@@ -208,42 +248,27 @@ CRITICAL RULES - MUST FOLLOW EXACTLY
       throw new Error('Invalid response: missing sections array');
     }
     
-    // Trim extra sections if AI added more
-    if (parsed.sections.length > totalSections) {
-      console.warn(`AI returned ${parsed.sections.length} sections, expected ${totalSections}. Truncating.`);
-      parsed.sections = parsed.sections.slice(0, totalSections);
-    }
-    
-    // Fix section titles if needed
-    for (let i = 0; i < parsed.sections.length && i < params.questionTypes.length; i++) {
+    // Fix section titles to ensure correct order
+    const fixedSections: any[] = [];
+    for (let i = 0; i < params.questionTypes.length && i < parsed.sections.length; i++) {
       const expectedType = params.questionTypes[i].type;
       const expectedTitle = `Section ${String.fromCharCode(65 + i)} - ${expectedType}`;
-      if (parsed.sections[i].title !== expectedTitle) {
-        console.log(`Fixing section title: ${parsed.sections[i].title} -> ${expectedTitle}`);
+      if (parsed.sections[i]) {
         parsed.sections[i].title = expectedTitle;
       }
+      fixedSections.push(parsed.sections[i]);
     }
+    parsed.sections = fixedSections;
     
-    // Clean non-MCQ questions
-    for (let i = 0; i < parsed.sections.length && i < params.questionTypes.length; i++) {
-      const expectedType = params.questionTypes[i].type;
-      const section = parsed.sections[i];
-      
-      if (expectedType !== 'Multiple Choice Questions' && section.questions) {
-        section.questions = section.questions.map((q: any) => {
-          if (q.text && /[A-D]\)/.test(q.text)) {
-            let cleanText = q.text.replace(/(\n[A-D]\)\s*[^\n]+)+/g, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
-            if (!cleanText) cleanText = q.text.split('\n')[0];
-            return { ...q, text: cleanText };
-          }
-          return q;
-        });
+    // Also ensure answerKey has correct number of entries
+    if (parsed.answerKey) {
+      const answerLines = parsed.answerKey.split('\\n').filter((l: string) => l.match(/^\d+\./));
+      if (answerLines.length !== totalQuestions) {
+        console.warn(`Answer key has ${answerLines.length} entries, expected ${totalQuestions}`);
       }
     }
     
-    const totalGenerated = parsed.sections.reduce((sum: number, s: any) => sum + (s.questions?.length || 0), 0);
-    console.log(`✅ Generated ${totalGenerated} / ${totalQuestions} questions`);
-    console.log(`✅ Created ${parsed.sections.length} sections`);
+    console.log(`✅ Generated ${parsed.sections.length} sections`);
     
     return parsed;
   } catch (error) {
