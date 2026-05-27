@@ -36,28 +36,23 @@ export async function generateQuestionPaper(params: GenerateParams) {
     sectionsList += `   Section ${sectionLetter}: ${qt.type} (${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each)\n`;
   }
 
-  let prompt = `You are an expert exam paper generator. Create a complete question paper with questions AND their correct answers.
+  let prompt = `You are an expert exam paper generator. Create a complete question paper with REAL questions and their CORRECT answers.
 
 ╔═══════════════════════════════════════════════════════════════════════════════╗
-║                    CRITICAL: YOU MUST PROVIDE REAL ANSWERS                     ║
+║                    CRITICAL: GENERATE REAL QUESTIONS                          ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 
-For EVERY question you generate, you MUST provide the REAL correct answer in the answerKey field.
-- For Multiple Choice Questions: Provide the correct letter (A, B, C, or D)
-- For Short Questions: Write a complete 2-3 sentence model answer
-- For Numerical Problems: Calculate and provide the final number with units
-- For Diagram Questions: Describe what the diagram should show
-
-DO NOT use placeholders like "Answer will vary", "Teacher should provide", or "Model answer for...".
+DO NOT use placeholders like "Question 1:" or "Sample question".
+You MUST write ACTUAL, MEANINGFUL questions based on the subject and topic.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXACT SECTION ORDER (MUST FOLLOW)
+EXACT SECTION ORDER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${sectionsList}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-QUESTION SOURCE
+TOPIC / SUBJECT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
@@ -70,12 +65,18 @@ ${fileContentText}
 
 `;
   } else {
-    prompt += `Generate questions about: "${params.title}" for ${params.subject} class ${params.className}\n`;
+    prompt += `Subject: ${params.subject}
+Topic: ${params.title}
+Class: ${params.className}
+
+Generate ${totalQuestions} questions about "${params.title}" for ${params.subject} class ${params.className}.
+
+`;
   }
 
   prompt += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORMAT RULES BY QUESTION TYPE
+QUESTION FORMAT BY TYPE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 `;
@@ -84,52 +85,47 @@ FORMAT RULES BY QUESTION TYPE
     const qt = params.questionTypes[i];
     const sectionLetter = String.fromCharCode(65 + i);
     
-    prompt += `SECTION ${sectionLetter}: ${qt.type}\n`;
+    prompt += `╔═══════════════════════════════════════════════════════════════════════════════╗\n`;
+    prompt += `║ SECTION ${sectionLetter}: ${qt.type.toUpperCase()}                                                       ║\n`;
+    prompt += `╚═══════════════════════════════════════════════════════════════════════════════╝\n`;
     
     if (qt.type === 'Multiple Choice Questions') {
-      prompt += `   Each MCQ question text MUST include:
-   Question: [question]?
-   A) [option]
-   B) [option]
-   C) [option]
-   D) [option]
-   [Answer: X]
-   
-   Example:
-   Question: What is 2+2?
-   A) 3
-   B) 4
-   C) 5
-   D) 6
-   [Answer: B]
-   
+      prompt += `Write ${qt.numberOfQuestions} REAL Multiple Choice Questions about ${params.title}.
+
+Example of a GOOD MCQ:
+Question: What is the SI unit of force?
+A) Joule
+B) Watt
+C) Newton
+D) Pascal
+[Answer: C]
+
 `;
     } 
     else if (qt.type === 'Short Questions') {
-      prompt += `   Each Short Question: Plain question text without options.
-   In answerKey, write a REAL 2-3 sentence answer.
-   
-   Example question: Explain the process of photosynthesis.
-   Example answer in answerKey: Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen. It occurs in the chloroplasts and is essential for plant growth.
-   
+      prompt += `Write ${qt.numberOfQuestions} REAL Short Answer Questions about ${params.title}.
+
+Example of a GOOD short question:
+Explain Newton's first law of motion with an example.
+
 `;
     }
     else if (qt.type === 'Numerical Problems') {
-      prompt += `   Each Numerical Problem: Provide the problem statement.
-   In answerKey, calculate and provide the ACTUAL number with units.
-   
-   Example question: A car travels 120 km in 2 hours. Calculate its speed.
-   Example answer in answerKey: 60 km/h
-   
+      prompt += `Write ${qt.numberOfQuestions} REAL Numerical Problems about ${params.title}.
+
+Example of a GOOD numerical problem:
+A car accelerates from rest at 2 m/s² for 5 seconds. Calculate its final velocity.
+
+Answer in answerKey: 10 m/s
+
 `;
     }
     else if (qt.type === 'Diagram/Graph-Based Questions') {
-      prompt += `   Each Diagram Question: Describe what to draw.
-   In answerKey, describe what the correct diagram should show.
-   
-   Example question: Draw a labeled diagram of the human heart.
-   Example answer in answerKey: A diagram showing the four chambers: right atrium, right ventricle, left atrium, left ventricle, with labeled blood vessels (aorta, pulmonary artery, vena cava).
-   
+      prompt += `Write ${qt.numberOfQuestions} REAL Diagram/Graph questions about ${params.title}.
+
+Example of a GOOD diagram question:
+Draw a labeled diagram showing the structure of a neuron.
+
 `;
     }
     prompt += `\n`;
@@ -137,7 +133,7 @@ FORMAT RULES BY QUESTION TYPE
 
   prompt += `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-JSON OUTPUT STRUCTURE
+JSON OUTPUT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {
@@ -158,28 +154,28 @@ JSON OUTPUT STRUCTURE
       if (qt.type === 'Multiple Choice Questions') {
         prompt += `
         {
-          "text": "Question: Question ${j+1}?\\\\nA) Option A\\\\nB) Option B\\\\nC) Option C\\\\nD) Option D\\\\n[Answer: A]",
-          "difficulty": "Easy",
-          "marks": ${qt.marksPerQuestion}
-        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
-      } else if (qt.type === 'Short Questions') {
-        prompt += `
-        {
-          "text": "Short question ${j+1}: What is the main concept?",
+          "text": "Question: What is the SI unit of force?\\\\nA) Joule\\\\nB) Watt\\\\nC) Newton\\\\nD) Pascal\\\\n[Answer: C]",
           "difficulty": "Easy",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
       } else if (qt.type === 'Numerical Problems') {
         prompt += `
         {
-          "text": "Numerical problem ${j+1}: Calculate the value.",
+          "text": "A car accelerates from rest at 2 m/s² for 5 seconds. Calculate its final velocity.",
+          "difficulty": "Easy",
+          "marks": ${qt.marksPerQuestion}
+        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
+      } else if (qt.type === 'Short Questions') {
+        prompt += `
+        {
+          "text": "Explain Newton's first law of motion with an example.",
           "difficulty": "Easy",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
       } else {
         prompt += `
         {
-          "text": "${qt.type} question ${j+1}.",
+          "text": "Draw a labeled diagram showing the structure of a neuron.",
           "difficulty": "Easy",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
@@ -191,56 +187,51 @@ JSON OUTPUT STRUCTURE
     }${i < params.questionTypes.length - 1 ? ',' : ''}`;
   }
 
-  // Build answer key example with real answers
-  let answerKeyExample = '"';
+  // Build dynamic answer key
+  let answerKeyEntries = [];
   let counter = 1;
   for (const qt of params.questionTypes) {
     for (let j = 0; j < qt.numberOfQuestions; j++) {
       if (qt.type === 'Multiple Choice Questions') {
-        answerKeyExample += `${counter}. A`;
-      } else if (qt.type === 'Short Questions') {
-        answerKeyExample += `${counter}. This is a real model answer that directly answers the question with 2-3 complete sentences.`;
+        answerKeyEntries.push(`${counter}. C`);
       } else if (qt.type === 'Numerical Problems') {
-        answerKeyExample += `${counter}. 42 units`;
+        answerKeyEntries.push(`${counter}. 10 m/s`);
+      } else if (qt.type === 'Short Questions') {
+        answerKeyEntries.push(`${counter}. Newton's first law states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force. For example, a book on a table remains stationary until someone pushes it.`);
       } else {
-        answerKeyExample += `${counter}. The diagram should show the key components as described.`;
+        answerKeyEntries.push(`${counter}. The diagram should show a labeled neuron with dendrites, cell body, axon, and axon terminals.`);
       }
-      answerKeyExample += counter < totalQuestions ? '\\n' : '';
       counter++;
     }
   }
-  answerKeyExample += '"';
 
   prompt += `
   ],
-  "answerKey": ${answerKeyExample}
+  "answerKey": "${answerKeyEntries.join('\\n')}"
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FINAL INSTRUCTIONS - READ CAREFULLY
+CRITICAL RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Create EXACTLY ${totalSections} sections in the order shown above.
-2. For EACH question, generate REAL, SPECIFIC answers in the answerKey field.
-3. For Numerical Problems: DO NOT write formulas. Write the ACTUAL CALCULATED NUMBER.
-4. For Short Questions: DO NOT write "Answer will vary". Write REAL model answers.
-5. For Diagram Questions: DO NOT write "Diagram should show". Write WHAT it should show.
-6. The answerKey MUST have ${totalQuestions} entries numbered 1 to ${totalQuestions}.
-7. Return ONLY valid JSON. No extra text before or after.
+1. Write REAL, MEANINGFUL questions - NOT "Question 1:" or "Sample question".
+2. Each question MUST be based on "${params.title}" for ${params.subject}.
+3. For MCQ: Include A), B), C), D) options and [Answer: X].
+4. For Numerical: Provide the actual calculated answer.
+5. Return ONLY valid JSON.
 `;
 
   try {
     const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: 'llama-3.1-8b-instant',
-      temperature: 0.7,
-      max_tokens: 4096,
-      response_format: { type: 'json_object' },
-    });
-
+  messages: [{ role: 'user', content: prompt }],
+  model: 'llama-3.3-70b-versatile', 
+  temperature: 0.7,
+  max_tokens: 4096,
+  response_format: { type: 'json_object' },
+});
     const response = completion.choices[0]?.message?.content;
     if (!response) throw new Error('No response from AI');
-    console.log('AI response received, length:', response.length);
+    console.log('AI response received');
     
     const parsed = JSON.parse(response);
     
@@ -248,27 +239,14 @@ FINAL INSTRUCTIONS - READ CAREFULLY
       throw new Error('Invalid response: missing sections array');
     }
     
-    // Fix section titles to ensure correct order
-    const fixedSections: any[] = [];
+    // Fix section titles
     for (let i = 0; i < params.questionTypes.length && i < parsed.sections.length; i++) {
       const expectedType = params.questionTypes[i].type;
       const expectedTitle = `Section ${String.fromCharCode(65 + i)} - ${expectedType}`;
-      if (parsed.sections[i]) {
-        parsed.sections[i].title = expectedTitle;
-      }
-      fixedSections.push(parsed.sections[i]);
-    }
-    parsed.sections = fixedSections;
-    
-    // Also ensure answerKey has correct number of entries
-    if (parsed.answerKey) {
-      const answerLines = parsed.answerKey.split('\\n').filter((l: string) => l.match(/^\d+\./));
-      if (answerLines.length !== totalQuestions) {
-        console.warn(`Answer key has ${answerLines.length} entries, expected ${totalQuestions}`);
-      }
+      parsed.sections[i].title = expectedTitle;
     }
     
-    console.log(`✅ Generated ${parsed.sections.length} sections`);
+    console.log(`✅ Generated ${parsed.sections.length} sections with real questions`);
     
     return parsed;
   } catch (error) {

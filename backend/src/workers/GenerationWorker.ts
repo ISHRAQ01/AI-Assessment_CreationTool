@@ -49,119 +49,13 @@ interface JobData {
   };
 }
 
-// Helper: Calculate numerical answers
-function calculateNumericalAnswer(questionText: string): string {
-  const lowerText = questionText.toLowerCase();
-  
-  // Matrix determinant 2x2: [[a, b], [c, d]] => ad - bc
-  const matrixDetMatch = lowerText.match(/determinant.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
-  if (matrixDetMatch) {
-    const a = parseInt(matrixDetMatch[1]);
-    const b = parseInt(matrixDetMatch[2]);
-    const c = parseInt(matrixDetMatch[3]);
-    const d = parseInt(matrixDetMatch[4]);
-    const result = (a * d) - (b * c);
-    return `${result}`;
-  }
-  
-  // Matrix inverse 2x2: [[a, b], [c, d]]
-  const matrixInvMatch = lowerText.match(/inverse.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
-  if (matrixInvMatch) {
-    const a = parseInt(matrixInvMatch[1]);
-    const b = parseInt(matrixInvMatch[2]);
-    const c = parseInt(matrixInvMatch[3]);
-    const d = parseInt(matrixInvMatch[4]);
-    const det = (a * d) - (b * c);
-    if (det !== 0) {
-      return `[${d/det}, ${-b/det}; ${-c/det}, ${a/det}]`;
-    }
-    return "Matrix is singular (determinant = 0), inverse does not exist";
-  }
-  
-  // Matrix rank
-  const rankMatch = lowerText.match(/rank.*?\[\[(\d+),\s*(\d+)\],\s*\[(\d+),\s*(\d+)\]\]/i);
-  if (rankMatch) {
-    const a = parseInt(rankMatch[1]);
-    const b = parseInt(rankMatch[2]);
-    const c = parseInt(rankMatch[3]);
-    const d = parseInt(rankMatch[4]);
-    const det = (a * d) - (b * c);
-    if (det !== 0) return "2 (full rank)";
-    if (a !== 0 || b !== 0 || c !== 0 || d !== 0) return "1";
-    return "0";
-  }
-  
-  // Linear equation: 2x + 5 = 11
-  const equationMatch = lowerText.match(/(\d+)x\s*\+\s*(\d+)\s*=\s*(\d+)/i);
-  if (equationMatch) {
-    const a = parseInt(equationMatch[1]);
-    const b = parseInt(equationMatch[2]);
-    const c = parseInt(equationMatch[3]);
-    const result = (c - b) / a;
-    return `x = ${result}`;
-  }
-  
-  // Simple equation: x + 5 = 10
-  const simpleEqMatch = lowerText.match(/x\s*\+\s*(\d+)\s*=\s*(\d+)/i);
-  if (simpleEqMatch) {
-    const b = parseInt(simpleEqMatch[1]);
-    const c = parseInt(simpleEqMatch[2]);
-    const result = c - b;
-    return `x = ${result}`;
-  }
-  
-  // Area of rectangle
-  const rectMatch = lowerText.match(/rectangle.*?(\d+).*?(\d+)/i);
-  if (rectMatch && lowerText.includes('area')) {
-    const l = parseFloat(rectMatch[1]);
-    const w = parseFloat(rectMatch[2]);
-    return `${l * w} square units`;
-  }
-  
-  // Speed calculation
-  const speedMatch = lowerText.match(/(\d+)\s*(?:km|kilometers).*?(\d+)\s*(?:hours?|h)/i);
-  if (speedMatch && (lowerText.includes('speed') || lowerText.includes('average speed'))) {
-    const distance = parseFloat(speedMatch[1]);
-    const time = parseFloat(speedMatch[2]);
-    return `${distance / time} km/h`;
-  }
-  
-  // Volume of box
-  const volumeMatch = lowerText.match(/box.*?(\d+).*?(\d+).*?(\d+)/i);
-  if (volumeMatch && lowerText.includes('volume')) {
-    const l = parseFloat(volumeMatch[1]);
-    const w = parseFloat(volumeMatch[2]);
-    const h = parseFloat(volumeMatch[3]);
-    return `${l * w * h} cubic units`;
-  }
-  
-  return `[Calculate: ${questionText.substring(0, 100)}]`;
-}
-
-// Helper: Generate short answer
-function generateShortAnswer(questionText: string, subject: string): string {
-  const lowerText = questionText.toLowerCase();
-  
-  if (lowerText.includes('matrix')) {
-    if (lowerText.includes('determinant')) {
-      return `The determinant is a scalar value that can be computed from a square matrix. For a 2x2 matrix [[a, b], [c, d]], the determinant is ad - bc.`;
-    }
-    if (lowerText.includes('inverse')) {
-      return `The inverse of a matrix A is a matrix A⁻¹ such that A × A⁻¹ = I (identity matrix). For a 2x2 matrix [[a, b], [c, d]] with determinant ≠ 0, the inverse is (1/det) × [[d, -b], [-c, a]].`;
-    }
-    if (lowerText.includes('rank')) {
-      return `The rank of a matrix is the maximum number of linearly independent rows or columns. It indicates the dimension of the vector space spanned by the matrix.`;
-    }
-    if (lowerText.includes('nullity')) {
-      return `Nullity is the dimension of the null space of a matrix. By the rank-nullity theorem: rank + nullity = number of columns.`;
-    }
-  }
-  
-  if (lowerText.includes('linear equation') || lowerText.includes('equation')) {
-    return `A linear equation is an equation where variables appear only to the first power. For example, 2x + 5 = 11 solves to x = 3.`;
-  }
-  
-  return `Answer: ${questionText.substring(0, 80)}... (Teacher to evaluate based on course material)`;
+// Helper to normalize difficulty to valid enum values
+function normalizeDifficulty(difficulty: string): 'Easy' | 'Moderate' | 'Challenging' {
+  const lower = difficulty.toLowerCase();
+  if (lower === 'easy') return 'Easy';
+  if (lower === 'moderate' || lower === 'medium') return 'Moderate';
+  if (lower === 'challenging' || lower === 'hard') return 'Challenging';
+  return 'Moderate';
 }
 
 const worker = new Worker<JobData>(
@@ -187,7 +81,7 @@ const worker = new Worker<JobData>(
               .filter((q) => q && typeof q.text === 'string' && q.text.trim().length > 0)
               .map((q) => ({
                 text: q.text?.trim() || '',
-                difficulty: q.difficulty || 'Moderate',
+                difficulty: normalizeDifficulty(q.difficulty || 'Moderate'),
                 marks: q.marks || 2,
               })),
           }));
@@ -199,45 +93,16 @@ const worker = new Worker<JobData>(
       console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
 
       // ============================================================
-      // 🔧 Generate Answer Key with calculated answers
+      // 🔧 USE AI'S ORIGINAL ANSWER KEY
       // ============================================================
-      let sectionWiseAnswerKey = '';
+      let finalAnswerKey = '';
 
-      for (let s = 0; s < validSections.length; s++) {
-        const section = validSections[s];
-        const isMcqSection = section.title.toLowerCase().includes('multiple choice');
-        const isShortSection = section.title.toLowerCase().includes('short');
-        const isNumericalSection = section.title.toLowerCase().includes('numerical');
-        
-        sectionWiseAnswerKey += `\n${'='.repeat(60)}\n`;
-        sectionWiseAnswerKey += `${section.title}\n`;
-        sectionWiseAnswerKey += `${'='.repeat(60)}\n`;
-        
-        for (let q = 0; q < section.questions.length; q++) {
-          const question = section.questions[q];
-          let answer = '';
-          
-          if (isMcqSection) {
-            const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
-            answer = answerMatch ? answerMatch[1] : 'Refer to question options';
-          } 
-          else if (isNumericalSection) {
-            answer = calculateNumericalAnswer(question.text);
-          }
-          else if (isShortSection) {
-            answer = generateShortAnswer(question.text, formData.subject);
-          }
-          else {
-            answer = `Answer to question ${q+1}`;
-          }
-          
-          sectionWiseAnswerKey += `${q + 1}. ${answer}\n`;
-        }
-        
-        sectionWiseAnswerKey += `\n`;
+      if (generated.answerKey) {
+        finalAnswerKey = generated.answerKey.replace(/\\n/g, '\n');
+        console.log('📋 Using AI-generated answer key');
+      } else {
+        finalAnswerKey = 'Answer key not available';
       }
-
-      const finalAnswerKey = sectionWiseAnswerKey;
 
       const questionPaper = new QuestionPaper({
         assignmentId,
