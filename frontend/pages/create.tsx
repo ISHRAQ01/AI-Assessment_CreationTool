@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Link from 'next/link';
 import { 
   ArrowLeft, Plus, Trash2, Calendar, Clock, FileText, 
   BookOpen, Sparkles, CheckCircle, AlertCircle, Loader2,
-  HelpCircle, ChevronRight, Zap, Layers, Target
+  HelpCircle, ChevronRight, Zap, Layers, Target, Upload, X, File,
+  Home, Users, Wrench, Library, Settings
 } from 'lucide-react';
 
 interface QuestionType {
@@ -15,30 +16,42 @@ interface QuestionType {
 }
 
 const questionTypeOptions = [
-  { value: 'Multiple Choice Questions', icon: '🔘', desc: 'Students select from given options' },
-  { value: 'Short Questions', icon: '📝', desc: 'Brief written answers' },
-  { value: 'Diagram/Graph-Based Questions', icon: '📊', desc: 'Visual interpretation' },
-  { value: 'Numerical Problems', icon: '🔢', desc: 'Mathematical calculations' },
+  'Multiple Choice Questions',
+  'Short Questions',
+  'Diagram/Graph-Based Questions',
+  'Numerical Problems'
 ];
 
 export default function CreateAssignment() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: 'Science',
-    className: '8th',
+    subject: '',
+    className: '',
     dueDate: '',
-    timeAllowed: 45,
-    questionTypes: [{ type: 'Short Questions', numberOfQuestions: 5, marksPerQuestion: 2 }] as QuestionType[],
+    timeAllowed:'',
+    questionTypes: [] as QuestionType[],
     additionalInstructions: '',
   });
+
+  // Reset to default question types when component mounts (new assignment)
+  React.useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      questionTypes: [
+        
+      ]
+    }));
+  }, []); 
 
   const addQuestionType = () => {
     setFormData({
       ...formData,
-      questionTypes: [...formData.questionTypes, { type: 'Short Questions', numberOfQuestions: 0, marksPerQuestion: 0 }]
+      questionTypes: [...formData.questionTypes, { type: 'Multiple Choice Questions', numberOfQuestions: 1, marksPerQuestion: 1 }]
     });
   };
 
@@ -53,12 +66,75 @@ export default function CreateAssignment() {
     setFormData({ ...formData, questionTypes: newTypes });
   };
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      handleFileRead(files[0]);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileRead(e.target.files[0]);
+    }
+  };
+
+  const handleFileRead = (file: File) => {
+    setUploadedFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setFileContent(content);
+      
+      // Extract title from filename (remove extension)
+      const fileName = file.name.replace(/\.[^/.]+$/, '');
+      const extractedTitle = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+      
+      // Try to extract subject from content
+      let extractedSubject = formData.subject;
+      const subjectKeywords = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology'];
+      for (const keyword of subjectKeywords) {
+        if (content.toLowerCase().includes(keyword.toLowerCase())) {
+          extractedSubject = keyword;
+          break;
+        }
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        title: prev.title || extractedTitle,
+        subject: extractedSubject,
+        additionalInstructions: prev.additionalInstructions + (prev.additionalInstructions ? '\n\n' : '') + `File uploaded: ${file.name}\n${content.substring(0, 500)}...`
+      }));
+    };
+    reader.readAsText(file);
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setFileContent('');
+  };
+
   const calculateTotals = () => {
     let totalQuestions = 0;
     let totalMarks = 0;
     formData.questionTypes.forEach(qt => {
       totalQuestions += qt.numberOfQuestions;
-      totalMarks += qt.numberOfQuestions * qt.marksPerQuestion;
+      totalMarks += (qt.numberOfQuestions * qt.marksPerQuestion);
     });
     return { totalQuestions, totalMarks };
   };
@@ -80,13 +156,25 @@ export default function CreateAssignment() {
     
     setLoading(true);
     
+    // Prepare additional instructions with file content if uploaded
+    let finalInstructions = formData.additionalInstructions;
+    if (fileContent) {
+      finalInstructions = `${formData.additionalInstructions}\n\n--- Content from uploaded file ---\n${fileContent}`;
+    }
+    
+    // Add MCQ instruction to ensure proper format
+    const mcqTypes = formData.questionTypes.filter(qt => qt.type === 'Multiple Choice Questions');
+    if (mcqTypes.length > 0) {
+      finalInstructions += `\n\nIMPORTANT: For Multiple Choice Questions, please provide 4 options (A, B, C, D) with the correct answer marked. Format: "Question text? A) Option1 B) Option2 C) Option3 D) Option4 [Answer: A]"`;
+    }
+    
     try {
       const response = await axios.post('/api/assignments', {
         title: formData.title,
         description: `${formData.subject} - ${formData.className}`,
         dueDate: formData.dueDate,
         questionTypes: formData.questionTypes,
-        additionalInstructions: formData.additionalInstructions,
+        additionalInstructions: finalInstructions,
       });
       
       if (response.data.success) {
@@ -95,12 +183,13 @@ export default function CreateAssignment() {
         await axios.post('/api/generate', {
           assignmentId,
           formData: {
+            title: formData.title,
             subject: formData.subject,
             className: formData.className,
             timeAllowed: formData.timeAllowed,
             totalMarks,
             questionTypes: formData.questionTypes,
-            additionalInstructions: formData.additionalInstructions,
+            additionalInstructions: finalInstructions,
           }
         });
         
@@ -115,295 +204,355 @@ export default function CreateAssignment() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Premium Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 group">
-             <img 
-      src="/icon.png" 
-      alt="Profile" 
-      className="rounded-full object-cover shadow-md"
-      style={{ width: '32px', height: '32px' }}
-    />
-              
-              <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">VedaAI</span>
-            </Link>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Sparkles size={14} className="text-orange-400" />
-              <span>AI-Powered Assignment Creator</span>
-            </div>
+    <div className="min-h-screen bg-[#F3F4F6] text-[#374151] font-sans antialiased">
+      {/* Top Navbar */}
+      <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2 text-gray-600 cursor-pointer hover:text-gray-900">
+          <ArrowLeft size={20} />
+          <span className="text-sm font-medium">Assignment</span>
+        </Link>
+        
+        <div className="flex items-center gap-6">
+          <button className="relative p-1 text-gray-500 hover:text-gray-800">
+            <img 
+              src="/icon.png" 
+              alt="Logo" 
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          </button>
+          
+          <div className="flex items-center gap-2 border border-gray-200 rounded-full py-1 px-3 bg-gray-50">
+            <img 
+              src="/avataat.png" 
+              alt="Profile" 
+              className="w-7 h-7 rounded-full object-cover"
+            />
+            <span className="text-sm font-semibold text-gray-700">John Doe</span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        {/* Hero Section */}
-        <div className="mb-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-medium mb-4">
-            <Zap size={12} />
-            Smart Generation
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
-            Create New Assignment
-          </h1>
-          <p className="text-gray-500 max-w-2xl mx-auto">
-            Set up your assignment and let AI generate intelligent question papers tailored to your needs
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Assignment Details Card */}
-          <div className="group relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-200 to-amber-200 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-300 blur" />
-            <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center gap-3 mb-6">
-                <img 
-      src="/icon.png" 
-      alt="Profile" 
-      className="rounded-full object-cover shadow-md"
-      style={{ width: '32px', height: '32px' }}
-    />
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">Assignment Details</h2>
-                  <p className="text-sm text-gray-400">Basic information about your assignment</p>
-                </div>
+      <div className="max-w-[1400px] mx-auto px-8 py-8 flex gap-8">
+        
+        {/* Left Sidebar */}
+        <aside className="w-64 flex-shrink-0 flex flex-col justify-between h-[calc(100vh-120px)] sticky top-20">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-6">
+            <div className="flex items-center gap-2 px-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-base">
+                V
               </div>
-              
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assignment Title <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    onFocus={() => setFocusedField('title')}
-                    onBlur={() => setFocusedField(null)}
-                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none transition-all duration-200
-                      ${focusedField === 'title' 
-                        ? 'border-orange-400 ring-2 ring-orange-100' 
-                        : 'border-gray-200 hover:border-gray-300'}`}
-                    placeholder="e.g., Quiz on Electricity"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                    <input
-                      type="text"
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Class/Grade</label>
-                    <input
-                      type="text"
-                      value={formData.className}
-                      onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Calendar size={14} className="text-gray-400" />
-                      Due Date <span className="text-red-400">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.dueDate}
-                      onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                      <Clock size={14} className="text-gray-400" />
-                      Time Allowed (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.timeAllowed}
-                      onChange={(e) => setFormData({ ...formData, timeAllowed: parseInt(e.target.value) })}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
+              <span className="text-xl font-bold text-gray-900 tracking-tight">VedaAI</span>
             </div>
-          </div>
 
-          {/* Question Types Card */}
-          <div className="group relative">
-            <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-md">
-                  <Layers size={18} className="text-black" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">Question Types</h2>
-                  <p className="text-sm text-gray-400">Configure question distribution and marks</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {formData.questionTypes.map((qt, index) => {
-                  const option = questionTypeOptions.find(opt => opt.value === qt.type);
-                  return (
-                    <div key={index} className="group/item relative">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl opacity-0 group-hover/item:opacity-100 transition" />
-                      <div className="relative bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 transition-all">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="relative">
-                            <select
-                              value={qt.type}
-                              onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 appearance-none bg-white cursor-pointer"
-                            >
-                              {questionTypeOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.icon} {opt.value}
-                                </option>
-                              ))}
-                            </select>
-                            {option && (
-                              <p className="text-xs text-gray-400 mt-1 ml-1">{option.desc}</p>
-                            )}
-                          </div>
-                          <input
-                            type="number"
-                            placeholder="# Questions"
-                            value={qt.numberOfQuestions || ''}
-                            onChange={(e) => updateQuestionType(index, 'numberOfQuestions', parseInt(e.target.value) || 0)}
-                            className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                          />
-                          <div className="relative">
-                            <input
-                              type="number"
-                              placeholder="Marks each"
-                              value={qt.marksPerQuestion || ''}
-                              onChange={(e) => updateQuestionType(index, 'marksPerQuestion', parseInt(e.target.value) || 0)}
-                              className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                            />
-                          </div>
-                        </div>
-                        {formData.questionTypes.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeQuestionType(index)}
-                            className="absolute top-3 right-3 text-red-400 hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                <button
-                  type="button"
-                  onClick={addQuestionType}
-                  className="flex items-center gap-2 text-orange-500 hover:text-orange-600 text-sm font-medium transition-colors mt-2 group"
+            <Link href="/create" className="w-full bg-[#2D2E32] text-white rounded-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm font-medium shadow-sm">
+              <Plus size={16} className="text-orange-400" />
+              <span>Create Assignment</span>
+            </Link>
+
+            <nav className="space-y-1">
+              {[
+                { name: 'Home', icon: Home, active: false, href: '/' },
+                { name: 'My Groups', icon: Users, active: false, href: '#' },
+                { name: 'Assignments', icon: FileText, active: true, href: '/dashboard' },
+                { name: "AI Teacher's Toolkit", icon: Wrench, active: false, href: '#' },
+                { name: 'My Library', icon: Library, active: false, href: '#' },
+              ].map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    item.active 
+                      ? 'bg-orange-50 text-orange-600' 
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
                 >
-                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition">
-                    <Plus size={12} className="text-orange-500" />
+                  <div className="flex items-center gap-3">
+                    <item.icon size={18} className={item.active ? 'text-orange-600' : 'text-gray-400'} />
+                    <span>{item.name}</span>
                   </div>
-                  Add Question Type
-                </button>
+                </Link>
+              ))}
+            </nav>
+          </div>
 
-                {/* Summary Banner */}
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <div className="flex flex-wrap justify-between items-center gap-4">
-                    <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2">
-                        <Target size={14} className="text-gray-400" />
-                        <span className="text-sm text-gray-500">Total Questions:</span>
-                        <span className="text-lg font-bold text-gray-800">{totalQuestions}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={14} className="text-gray-400" />
-                        <span className="text-sm text-gray-500">Total Marks:</span>
-                        <span className="text-lg font-bold text-gray-800">{totalMarks}</span>
-                      </div>
-                    </div>
-                    {totalMarks > 0 && (
-                      <div className="text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                        Ready for AI generation
-                      </div>
-                    )}
-                  </div>
-                </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-gray-400 text-xs mb-3 font-medium">
+              <Settings size={14} />
+              <span>Settings</span>
+            </div>
+            <div className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+              <img 
+                src="/avataat.png" 
+                alt="School" 
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-800 truncate">Delhi Public School</p>
+                <p className="text-[11px] text-gray-400 truncate">Bokaro Steel City</p>
               </div>
             </div>
           </div>
+        </aside>
 
-          {/* Additional Instructions Card */}
-          <div className="group relative">
-            <div className="relative bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
-                  <HelpCircle size={18} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">Additional Information</h2>
-                  <p className="text-sm text-gray-400">Help AI generate better questions</p>
-                </div>
-              </div>
-              
-              <textarea
-                rows={4}
-                value={formData.additionalInstructions}
-                onChange={(e) => setFormData({ ...formData, additionalInstructions: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all resize-none"
-                placeholder="e.g., Generate a question paper for 3 hour exam duration covering chapters 1-5, include questions from real-life applications..."
+        {/* Main Form */}
+        <main className="flex-1 max-w-4xl">
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-gray-900">Create Assignment</h1>
+            <p className="text-xs text-gray-400">Set up a new assignment for your students</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+            
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">Assignment Details</h2>
+              <p className="text-xs text-gray-400">Basic information about your assignment</p>
+            </div>
+
+            {/* Title Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Title *</label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                placeholder="e.g., Quiz on Electricity"
               />
-              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-                <Sparkles size={10} />
-                AI will use this context to generate more relevant questions
+            </div>
+
+            {/* Subject and Class */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Class/Grade</label>
+                <input
+                  type="text"
+                  value={formData.className}
+                  onChange={(e) => setFormData({ ...formData, className: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* Due Date and Time Allowed */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Calendar size={14} /> Due Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <Clock size={14} /> Time Allowed (minutes)
+                </label>
+                <input
+                  type="number"
+                  value={formData.timeAllowed}
+                  onChange={(e) => setFormData({ ...formData, timeAllowed: parseInt(e.target.value) })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            {/* File Upload Area */}
+            <div
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
+                dragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 bg-gray-50'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('fileInput')?.click()}
+            >
+              <Upload size={32} className="mx-auto text-gray-400 mb-3" />
+              <p className="text-sm text-gray-600">Choose a file or drag & drop it here</p>
+              <p className="text-xs text-gray-400 mt-1">TXT, PDF, DOC, up to 10MB</p>
+              
+              <input
+                id="fileInput"
+                type="file"
+                accept=".txt,.pdf,.doc,.docx"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              
+              <button type="button" className="mt-4 bg-white border border-gray-300 text-gray-700 text-sm font-medium px-5 py-2 rounded-lg hover:bg-gray-50 transition">
+                Browse Files
+              </button>
+              
+              {uploadedFile && (
+                <div className="mt-4 flex items-center justify-between bg-white rounded-lg p-3 border max-w-md mx-auto">
+                  <div className="flex items-center gap-2">
+                    <File size={20} className="text-orange-500" />
+                    <div className="text-left">
+                      <p className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</p>
+                      <p className="text-xs text-green-600">✓ Title & subject extracted</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeFile(); }}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-200">
+                Upload document to automatically extract title and subject
               </p>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
-            <Link
-              href="/"
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
-            >
-              <ArrowLeft size={16} />
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Creating Assignment...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  Create Assignment
-                  <ChevronRight size={16} />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+            {/* Question Type Section */}
+            <div>
+              <div className="grid grid-cols-12 gap-4 mb-3 text-xs font-medium text-gray-500">
+                <div className="col-span-5">Question Type</div>
+                <div className="col-span-3 text-center">No. of Questions</div>
+                <div className="col-span-3 text-center">Marks</div>
+                <div className="col-span-1"></div>
+              </div>
+
+              <div className="space-y-3">
+                {formData.questionTypes.map((qt, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-4 items-center">
+                    <div className="col-span-5">
+                      <select
+                        value={qt.type}
+                        onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                      >
+                        {questionTypeOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="col-span-3">
+                      <input
+                        type="number"
+                        min="1"
+                        value={qt.numberOfQuestions}
+                        onChange={(e) => updateQuestionType(index, 'numberOfQuestions', parseInt(e.target.value) || 1)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    
+                    <div className="col-span-3">
+                      <input
+                        type="number"
+                        min="1"
+                        value={qt.marksPerQuestion}
+                        onChange={(e) => updateQuestionType(index, 'marksPerQuestion', parseInt(e.target.value) || 1)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                    
+                    <div className="col-span-1 text-center">
+                      {formData.questionTypes.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeQuestionType(index)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={addQuestionType}
+                className="mt-3 text-orange-500 text-sm hover:text-orange-600 font-medium"
+              >
+                + Add Question Type
+              </button>
+            </div>
+
+            {/* Totals */}
+            <div className="text-right text-sm text-gray-600 pt-2 border-t border-gray-100">
+              <div>Total Questions: <span className="font-bold text-gray-800">{totalQuestions}</span></div>
+              <div>Total Marks: <span className="font-bold text-gray-800">{totalMarks}</span></div>
+            </div>
+
+            {/* Additional Information */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional Information <span className="text-xs text-gray-400">(For better output)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={formData.additionalInstructions}
+                onChange={(e) => setFormData({ ...formData, additionalInstructions: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                placeholder="e.g., Generate a question paper for 3 hour exam duration..."
+              />
+              <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                <Sparkles size={10} className="text-orange-400" />
+                AI will use this context to generate better questions
+              </p>
+            </div>
+
+            {/* AI Generation Info Banner */}
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-orange-500" />
+                <span className="text-sm font-semibold text-orange-700">AI-Powered Generation</span>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">
+                Our AI will analyze your inputs and generate a complete question paper with sections, difficulty levels, and answer key.
+                For MCQ questions, 4 options will be provided with correct answer indicated.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between gap-4 pt-4">
+              <Link
+                href="/"
+                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm font-medium"
+              >
+                ← Previous
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Creating Assignment...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Create & Generate Paper
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </main>
       </div>
     </div>
   );
