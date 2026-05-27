@@ -178,7 +178,11 @@ export default function Dashboard() {
   ];
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-[#F5F5F5] flex font-sans">
+=======
+    <div className="min-h-screen flex font-sans" style={{ background: 'linear-gradient(to bottom, #eee, #dadada)' }}>
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
 
       {/* ── SIDEBAR ────────────────────────────────────────────────── */}
       <aside className="w-60 bg-white border-r border-gray-100 flex flex-col fixed h-full z-20 shadow-sm">
@@ -194,10 +198,21 @@ export default function Dashboard() {
         <div className="px-4 pb-5">
           <Link
             href="/create"
+<<<<<<< HEAD
             className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-full text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
             style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)', boxShadow: '0 2px 8px rgba(0,0,0,0.18)' }}
           >
             <Sparkles size={15} />
+=======
+            className="flex items-center justify-center gap-2 w-full py-2 px-10 rounded-full text-white text-sm font-medium transition-all hover:opacity-90 active:scale-95"
+            style={{ 
+              background: '#272727', 
+              border: '4px solid #ff7950',
+              boxShadow: '0px 16px 24px rgba(255,255,255,0.12), 0px 32px 24px rgba(255,255,255,0.2), inset 0px -1px 3.5px rgba(177,177,177,0.6), inset 0px 0px 34.5px rgba(255,255,255,0.25)'
+            }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
             Create Assignment
           </Link>
         </div>
@@ -335,19 +350,57 @@ export default function Dashboard() {
             </div>
           ) : assignments.length === 0 ? (
             /* ── EMPTY STATE ── */
+<<<<<<< HEAD
             <div className="flex flex-col items-center justify-center min-h-[75vh] gap-6">
               <EmptyIllustration />
               <div className="text-center">
                 <h2 className="text-lg font-bold text-gray-900 mb-1.5">No assignments yet</h2>
                 <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+=======
+            <div className="flex flex-col items-center justify-center min-h-[75vh] gap-8">
+              <EmptyIllustration />
+              <div className="text-center max-w-md">
+                <h2 
+                  className="font-bold mb-2 leading-relaxed"
+                  style={{
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
+                    fontSize: '20px',
+                    color: '#303030',
+                    letterSpacing: '-0.8px'
+                  }}
+                >
+                  No assignments yet
+                </h2>
+                <p 
+                  className="leading-relaxed"
+                  style={{
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
+                    fontSize: '16px',
+                    color: 'rgba(94,94,94,0.8)',
+                    letterSpacing: '-0.64px'
+                  }}
+                >
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
                   Create your first assignment to start collecting and grading student submissions.
                   You can set up rubrics, define marking criteria, and let AI assist with grading.
                 </p>
               </div>
               <Link
                 href="/create"
+<<<<<<< HEAD
                 className="flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-semibold"
                 style={{ background: '#111', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
+=======
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-medium transition-all hover:opacity-90"
+                style={{ 
+                  background: '#181818',
+                  border: '1.5px solid rgba(255,255,255,0.5)',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                  fontFamily: 'Bricolage Grotesque, sans-serif',
+                  fontSize: '16px',
+                  letterSpacing: '-0.64px'
+                }}
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
               >
                 <Plus size={16} />
                 Create Your First Assignment
@@ -412,14 +465,24 @@ export default function Dashboard() {
 
                       <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-50">
                         <span>
+<<<<<<< HEAD
                           <span className="font-medium text-gray-600">Assigned on</span> :{' '}
                           {new Date(assignment.createdAt).toLocaleDateString('en-GB', {
+=======
+                          <span className="font-medium text-gray-600">Assigned on</span> :{
+                          new Date(assignment.createdAt).toLocaleDateString('en-GB', {
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
                             day: '2-digit', month: '2-digit', year: 'numeric'
                           }).replace(/\//g, '-')}
                         </span>
                         <span>
+<<<<<<< HEAD
                           <span className="font-medium text-gray-600">Due</span> :{' '}
                           {new Date(assignment.dueDate).toLocaleDateString('en-GB', {
+=======
+                          <span className="font-medium text-gray-600">Due</span> :{
+                          new Date(assignment.dueDate).toLocaleDateString('en-GB', {
+>>>>>>> ace625fe822a8d87daa3088e36a2d3b4c6a461a4
                             day: '2-digit', month: '2-digit', year: 'numeric'
                           }).replace(/\//g, '-')}
                         </span>
