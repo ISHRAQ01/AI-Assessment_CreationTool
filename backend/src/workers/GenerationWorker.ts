@@ -56,14 +56,11 @@ const worker = new Worker<JobData>(
     const { assignmentId, formData } = job.data;
 
     try {
-      // Update assignment status to generating
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'generating' });
 
-      // Generate questions using AI
       const generated: IGeneratedResponse = await generateQuestionPaper(formData);
       console.log('AI Response received');
 
-      // Validate and clean sections
       let validSections: ISection[] = [];
       if (generated.sections && Array.isArray(generated.sections)) {
         validSections = generated.sections
@@ -87,32 +84,35 @@ const worker = new Worker<JobData>(
       console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
 
       // ============================================================
-      // 🔧 Parse AI's answerKey to extract answers for all questions
+      // 🔧 Parse AI's answerKey
       // ============================================================
       let answerMap: Map<number, string> = new Map();
-      
+
       if (generated.answerKey) {
-        // Parse answerKey lines like "1. C", "2. The role of insulin is...", etc.
-        const lines = generated.answerKey.split('\n');
+        let cleanAnswerKey = generated.answerKey.replace(/\\n/g, '\n');
+        const lines = cleanAnswerKey.split('\n');
+        
         for (const line of lines) {
           const match = line.match(/^(\d+)\.\s+(.+)$/);
           if (match) {
             const qNum = parseInt(match[1]);
             let answer = match[2].trim();
-            // Remove any \n characters from the answer
-            answer = answer.replace(/\\n/g, ' ').replace(/\n/g, ' ');
-            answerMap.set(qNum, answer);
+            answer = answer.replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            if (!answerMap.has(qNum)) {
+              answerMap.set(qNum, answer);
+            }
           }
         }
         console.log(`📋 Parsed ${answerMap.size} answers from AI response`);
       }
-      
+
       // ============================================================
-      // 🔧 Generate SECTION-WISE Answer Key with proper formatting
+      // 🔧 Generate answer key
       // ============================================================
       let sectionWiseAnswerKey = '';
       let globalQuestionNumber = 1;
-      
+
       for (let s = 0; s < validSections.length; s++) {
         const section = validSections[s];
         const isMcqSection = section.title.toLowerCase().includes('multiple choice');
@@ -125,12 +125,10 @@ const worker = new Worker<JobData>(
           const question = section.questions[q];
           let answer = '';
           
-          // First check if we have answer from AI's answerKey using global number
           if (answerMap.has(globalQuestionNumber)) {
             answer = answerMap.get(globalQuestionNumber) || '';
           }
           
-          // If no answer found, try to extract from MCQ text
           if (!answer && isMcqSection) {
             const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
             if (answerMatch) {
@@ -138,7 +136,6 @@ const worker = new Worker<JobData>(
             }
           }
           
-          // If still no answer, provide appropriate placeholder
           if (!answer) {
             if (isMcqSection) {
               answer = 'Not specified';
@@ -151,13 +148,11 @@ const worker = new Worker<JobData>(
           globalQuestionNumber++;
         }
         
-        // Add extra spacing between sections
         sectionWiseAnswerKey += `\n`;
       }
-      
+
       const finalAnswerKey = sectionWiseAnswerKey;
 
-      // Create question paper in database
       const questionPaper = new QuestionPaper({
         assignmentId,
         subject: formData.subject,
@@ -171,13 +166,11 @@ const worker = new Worker<JobData>(
       const saved = await questionPaper.save();
       console.log(`✅ Question paper saved with ID: ${saved._id}`);
 
-      // Update assignment with generated paper ID
       await Assignment.findByIdAndUpdate(assignmentId, {
         status: 'completed',
         generatedPaperId: saved._id,
       });
 
-      // 🔥 Publish completion event for WebSocket
       const completionEvent = JSON.stringify({
         type: 'GENERATION_COMPLETED',
         assignmentId: assignmentId,
@@ -193,7 +186,6 @@ const worker = new Worker<JobData>(
       console.error(`❌ Job ${job.id} failed:`, error);
       await Assignment.findByIdAndUpdate(assignmentId, { status: 'failed' });
       
-      // Publish failure event
       const failureEvent = JSON.stringify({
         type: 'GENERATION_FAILED',
         assignmentId: assignmentId,
