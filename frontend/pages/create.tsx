@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ const questionTypeOptions = [
   'Numerical Problems'
 ];
 
+
 export default function CreateAssignment() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -29,24 +30,16 @@ export default function CreateAssignment() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
-    title: '',
-    subject: '',
-    className: '',
-    dueDate: '',
-    timeAllowed:'',
-    questionTypes: [] as QuestionType[],
-    additionalInstructions: '',
-  });
+  title: '',
+  subject: 'Science',
+  className: '8th',
+  dueDate: '',
+  timeAllowed: 45,
+  questionTypes: [] as QuestionType[], 
+  additionalInstructions: '',
+});
 
-  // Reset to default question types when component mounts (new assignment)
-  React.useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      questionTypes: [
-        
-      ]
-    }));
-  }, []); 
+
 
   const addQuestionType = () => {
     setFormData({
@@ -93,35 +86,83 @@ export default function CreateAssignment() {
     }
   };
 
-  const handleFileRead = (file: File) => {
-    setUploadedFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setFileContent(content);
-      
-      // Extract title from filename (remove extension)
-      const fileName = file.name.replace(/\.[^/.]+$/, '');
-      const extractedTitle = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-      
-      // Try to extract subject from content
-      let extractedSubject = formData.subject;
-      const subjectKeywords = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology'];
-      for (const keyword of subjectKeywords) {
-        if (content.toLowerCase().includes(keyword.toLowerCase())) {
-          extractedSubject = keyword;
-          break;
+  // Extract text from PDF using simple approach
+  const extractPdfTextSimple = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
+          const text = new TextDecoder().decode(arrayBuffer);
+          const matches = text.match(/[A-Za-z0-9\s,\.\-\'\"]{20,}/g);
+          const extracted = matches ? matches.join(' ').substring(0, 4000) : `[PDF file: ${file.name} - ${(file.size / 1024).toFixed(1)} KB]`;
+          resolve(extracted);
+        } catch (err) {
+          resolve(`[PDF file: ${file.name} - ${(file.size / 1024).toFixed(1)} KB]`);
         }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  // FIXED: File content is stored separately, NOT added to additionalInstructions display
+  const handleFileRead = async (file: File) => {
+    setUploadedFile(file);
+    
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    const extractedTitle = fileName.charAt(0).toUpperCase() + fileName.slice(1);
+    
+    let extractedSubject = formData.subject;
+    const subjectKeywords = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology', 'Hindi', 'Sanskrit'];
+    for (const keyword of subjectKeywords) {
+      if (fileName.toLowerCase().includes(keyword.toLowerCase())) {
+        extractedSubject = keyword;
+        break;
       }
+    }
+    
+    let content = '';
+    
+    if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      // For TXT files
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        content = event.target?.result as string;
+        setFileContent(content); // Store separately, NOT in additionalInstructions
+        
+        // Update title and subject only, NOT additionalInstructions
+        setFormData(prev => ({
+          ...prev,
+          title: prev.title || extractedTitle,
+          subject: extractedSubject,
+          // additionalInstructions remains unchanged - user can still add their own notes
+        }));
+      };
+      reader.readAsText(file);
+    } 
+    else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      const extractedText = await extractPdfTextSimple(file);
+      content = extractedText;
+      setFileContent(content); // Store separately, NOT in additionalInstructions
       
       setFormData(prev => ({
         ...prev,
         title: prev.title || extractedTitle,
         subject: extractedSubject,
-        additionalInstructions: prev.additionalInstructions + (prev.additionalInstructions ? '\n\n' : '') + `File uploaded: ${file.name}\n${content.substring(0, 500)}...`
+        // additionalInstructions remains unchanged
       }));
-    };
-    reader.readAsText(file);
+      
+      alert(`PDF "${fileName}" loaded! Content extracted for AI.`);
+    }
+    else {
+      setFileContent(`[File uploaded: ${file.name} - ${(file.size / 1024).toFixed(1)} KB]`);
+      setFormData(prev => ({
+        ...prev,
+        title: prev.title || extractedTitle,
+        subject: extractedSubject,
+      }));
+    }
   };
 
   const removeFile = () => {
@@ -141,6 +182,7 @@ export default function CreateAssignment() {
 
   const { totalQuestions, totalMarks } = calculateTotals();
 
+  // FIXED: File content is added ONLY during submission, not displayed in textarea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -156,17 +198,79 @@ export default function CreateAssignment() {
     
     setLoading(true);
     
-    // Prepare additional instructions with file content if uploaded
-    let finalInstructions = formData.additionalInstructions;
-    if (fileContent) {
-      finalInstructions = `${formData.additionalInstructions}\n\n--- Content from uploaded file ---\n${fileContent}`;
-    }
-    
-    // Add MCQ instruction to ensure proper format
-    const mcqTypes = formData.questionTypes.filter(qt => qt.type === 'Multiple Choice Questions');
-    if (mcqTypes.length > 0) {
-      finalInstructions += `\n\nIMPORTANT: For Multiple Choice Questions, please provide 4 options (A, B, C, D) with the correct answer marked. Format: "Question text? A) Option1 B) Option2 C) Option3 D) Option4 [Answer: A]"`;
-    }
+// Build final instructions for AI - file content added here, NOT in display
+let finalInstructions = formData.additionalInstructions;
+
+// Add file content ONLY for AI submission (not shown in UI)
+if (uploadedFile && fileContent && fileContent.length > 100) {
+  finalInstructions = `IMPORTANT: You are an expert exam question generator. Generate questions based ONLY on the following content from "${uploadedFile.name}".
+
+--- FILE CONTENT START ---
+${fileContent.substring(0, 4000)}
+--- FILE CONTENT END ---
+
+STRICT RULES:
+1. Generate questions ONLY from topics in the above content
+2. Do NOT invent questions about topics not mentioned in the file
+3. Subject: ${formData.subject}
+4. Class/Grade: ${formData.className}
+
+${formData.additionalInstructions ? `\nAdditional user instructions: ${formData.additionalInstructions}` : ''}`;
+}
+
+// Check if MCQ is selected
+const hasMCQ = formData.questionTypes.some(qt => qt.type === 'Multiple Choice Questions');
+
+if (hasMCQ) {
+  finalInstructions += `
+
+╔══════════════════════════════════════════════════════════════╗
+║           IMPORTANT: MULTIPLE CHOICE QUESTION FORMAT         ║
+╚══════════════════════════════════════════════════════════════╝
+
+For EVERY Multiple Choice Question, you MUST follow this EXACT format:
+
+Question: [Your question text here]?
+A) [First option]
+B) [Second option]
+C) [Third option]
+D) [Fourth option]
+[Answer: X] where X is A, B, C, or D
+
+EXAMPLE:
+Question: What is the capital of France?
+A) London
+B) Berlin
+C) Paris
+D) Madrid
+[Answer: C]
+
+DO NOT use bold, markdown, or any special formatting.
+Each MCQ MUST have exactly 4 options (A, B, C, D).
+The correct answer MUST be indicated as [Answer: X] at the end.
+
+Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questions')?.numberOfQuestions || 5} Multiple Choice Questions based on the file content.`;
+}
+
+// Add instructions for other question types
+const hasShort = formData.questionTypes.some(qt => qt.type === 'Short Questions');
+if (hasShort) {
+  finalInstructions += `\n\nFor Short Questions, generate clear, concise questions that require 2-3 sentence answers.`;
+}
+
+const hasDiagram = formData.questionTypes.some(qt => qt.type === 'Diagram/Graph-Based Questions');
+if (hasDiagram) {
+  finalInstructions += `\n\nFor Diagram/Graph-Based Questions, describe what diagram or graph students need to draw or interpret.`;
+}
+
+const hasNumerical = formData.questionTypes.some(qt => qt.type === 'Numerical Problems');
+if (hasNumerical) {
+  finalInstructions += `\n\nFor Numerical Problems, provide clear problem statements with necessary data.`;
+}
+
+// Add total counts
+finalInstructions += `\n\nTotal Questions to Generate: ${totalQuestions} (${formData.questionTypes.map(qt => `${qt.numberOfQuestions} ${qt.type}`).join(', ')})`;
+finalInstructions += `\nTotal Marks: ${totalMarks}`;
     
     try {
       const response = await axios.post('/api/assignments', {
@@ -205,7 +309,6 @@ export default function CreateAssignment() {
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-[#374151] font-sans antialiased">
-      {/* Top Navbar */}
       <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-between sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-2 text-gray-600 cursor-pointer hover:text-gray-900">
           <ArrowLeft size={20} />
@@ -214,19 +317,11 @@ export default function CreateAssignment() {
         
         <div className="flex items-center gap-6">
           <button className="relative p-1 text-gray-500 hover:text-gray-800">
-            <img 
-              src="/icon.png" 
-              alt="Logo" 
-              className="w-8 h-8 rounded-full object-cover"
-            />
+            <img src="/icon.png" alt="Logo" className="w-8 h-8 rounded-full object-cover" />
           </button>
           
           <div className="flex items-center gap-2 border border-gray-200 rounded-full py-1 px-3 bg-gray-50">
-            <img 
-              src="/avataat.png" 
-              alt="Profile" 
-              className="w-7 h-7 rounded-full object-cover"
-            />
+            <img src="/avataat.png" alt="Profile" className="w-7 h-7 rounded-full object-cover" />
             <span className="text-sm font-semibold text-gray-700">John Doe</span>
           </div>
         </div>
@@ -234,13 +329,10 @@ export default function CreateAssignment() {
 
       <div className="max-w-[1400px] mx-auto px-8 py-8 flex gap-8">
         
-        {/* Left Sidebar */}
         <aside className="w-64 flex-shrink-0 flex flex-col justify-between h-[calc(100vh-120px)] sticky top-20">
           <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-6">
             <div className="flex items-center gap-2 px-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-base">
-                V
-              </div>
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-base">V</div>
               <span className="text-xl font-bold text-gray-900 tracking-tight">VedaAI</span>
             </div>
 
@@ -261,9 +353,7 @@ export default function CreateAssignment() {
                   key={item.name}
                   href={item.href}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    item.active 
-                      ? 'bg-orange-50 text-orange-600' 
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    item.active ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -281,11 +371,7 @@ export default function CreateAssignment() {
               <span>Settings</span>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-              <img 
-                src="/avataat.png" 
-                alt="School" 
-                className="w-10 h-10 rounded-lg object-cover"
-              />
+              <img src="/avataat.png" alt="School" className="w-10 h-10 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-800 truncate">Delhi Public School</p>
                 <p className="text-[11px] text-gray-400 truncate">Bokaro Steel City</p>
@@ -308,7 +394,6 @@ export default function CreateAssignment() {
               <p className="text-xs text-gray-400">Basic information about your assignment</p>
             </div>
 
-            {/* Title Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Title *</label>
               <input
@@ -321,7 +406,6 @@ export default function CreateAssignment() {
               />
             </div>
 
-            {/* Subject and Class */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
@@ -343,7 +427,6 @@ export default function CreateAssignment() {
               </div>
             </div>
 
-            {/* Due Date and Time Allowed */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
@@ -370,7 +453,7 @@ export default function CreateAssignment() {
               </div>
             </div>
 
-            {/* File Upload Area */}
+            {/* File Upload Area - No longer shows content in Additional Info */}
             <div
               className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
                 dragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 bg-gray-50'
@@ -383,12 +466,12 @@ export default function CreateAssignment() {
             >
               <Upload size={32} className="mx-auto text-gray-400 mb-3" />
               <p className="text-sm text-gray-600">Choose a file or drag & drop it here</p>
-              <p className="text-xs text-gray-400 mt-1">TXT, PDF, DOC, up to 10MB</p>
+              <p className="text-xs text-gray-400 mt-1">TXT files recommended for best results</p>
               
               <input
                 id="fileInput"
                 type="file"
-                accept=".txt,.pdf,.doc,.docx"
+                accept=".txt,.pdf"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -403,22 +486,27 @@ export default function CreateAssignment() {
                     <File size={20} className="text-orange-500" />
                     <div className="text-left">
                       <p className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</p>
-                      <p className="text-xs text-green-600">✓ Title & subject extracted</p>
+                      <p className="text-xs text-green-600">
+                        {fileContent && fileContent.length > 100 
+                          ? `✓ ${(fileContent.length / 1000).toFixed(1)}KB content extracted (will be used for AI)`
+                          : `✓ File ready`}
+                      </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); removeFile(); }}
-                    className="text-gray-400 hover:text-red-500"
-                  >
+                  <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(); }} className="text-gray-400 hover:text-red-500">
                     <X size={16} />
                   </button>
                 </div>
               )}
               
-              <p className="text-xs text-gray-400 mt-4 pt-3 border-t border-gray-200">
-                Upload document to automatically extract title and subject
-              </p>
+              <div className="mt-4 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
+                <p className="font-medium">📌 How it works:</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>Upload TXT or PDF file with your content</li>
+                  <li>AI reads the content and generates questions ONLY from it</li>
+                  <li>File content is NOT shown here - it goes directly to AI</li>
+                </ul>
+              </div>
             </div>
 
             {/* Question Type Section */}
@@ -467,11 +555,7 @@ export default function CreateAssignment() {
                     
                     <div className="col-span-1 text-center">
                       {formData.questionTypes.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeQuestionType(index)}
-                          className="text-gray-400 hover:text-red-500"
-                        >
+                        <button type="button" onClick={() => removeQuestionType(index)} className="text-gray-400 hover:text-red-500">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -480,68 +564,57 @@ export default function CreateAssignment() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={addQuestionType}
-                className="mt-3 text-orange-500 text-sm hover:text-orange-600 font-medium"
-              >
+              <button type="button" onClick={addQuestionType} className="mt-3 text-orange-500 text-sm hover:text-orange-600 font-medium">
                 + Add Question Type
               </button>
             </div>
 
-            {/* Totals */}
             <div className="text-right text-sm text-gray-600 pt-2 border-t border-gray-100">
               <div>Total Questions: <span className="font-bold text-gray-800">{totalQuestions}</span></div>
               <div>Total Marks: <span className="font-bold text-gray-800">{totalMarks}</span></div>
             </div>
 
-            {/* Additional Information */}
+            {/* Additional Information - Now clean, no file content */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Information <span className="text-xs text-gray-400">(For better output)</span>
+                Additional Instructions <span className="text-xs text-gray-400">(Optional)</span>
               </label>
               <textarea
                 rows={3}
                 value={formData.additionalInstructions}
                 onChange={(e) => setFormData({ ...formData, additionalInstructions: e.target.value })}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
-                placeholder="e.g., Generate a question paper for 3 hour exam duration..."
+                placeholder="Add any specific instructions for the AI (e.g., Focus on chapters 1-5, include diagram questions, etc.)"
               />
               <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                 <Sparkles size={10} className="text-orange-400" />
-                AI will use this context to generate better questions
+                These instructions will be combined with your uploaded file content
               </p>
             </div>
 
-            {/* AI Generation Info Banner */}
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
               <div className="flex items-center gap-2">
                 <Sparkles size={18} className="text-orange-500" />
                 <span className="text-sm font-semibold text-orange-700">AI-Powered Generation</span>
               </div>
               <p className="text-xs text-orange-600 mt-1">
-                Our AI will analyze your inputs and generate a complete question paper with sections, difficulty levels, and answer key.
-                For MCQ questions, 4 options will be provided with correct answer indicated.
+                AI will read your uploaded file and generate questions based ONLY on that content.
               </p>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex justify-between gap-4 pt-4">
-              <Link
-                href="/"
-                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm font-medium"
-              >
+              <Link href="/" className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm font-medium">
                 ← Previous
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg text-sm font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-black rounded-lg text-sm font-medium hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
               >
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Creating Assignment...
+                    Creating...
                   </>
                 ) : (
                   <>
