@@ -98,7 +98,9 @@ const worker = new Worker<JobData>(
           const match = line.match(/^(\d+)\.\s+(.+)$/);
           if (match) {
             const qNum = parseInt(match[1]);
-            const answer = match[2].trim();
+            let answer = match[2].trim();
+            // Remove any \n characters from the answer
+            answer = answer.replace(/\\n/g, ' ').replace(/\n/g, ' ');
             answerMap.set(qNum, answer);
           }
         }
@@ -106,7 +108,7 @@ const worker = new Worker<JobData>(
       }
       
       // ============================================================
-      // 🔧 Generate SECTION-WISE Answer Key with proper separation
+      // 🔧 Generate SECTION-WISE Answer Key with proper formatting
       // ============================================================
       let sectionWiseAnswerKey = '';
       let globalQuestionNumber = 1;

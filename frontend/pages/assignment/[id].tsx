@@ -92,18 +92,21 @@ export default function AssignmentOutput() {
         const paper = response.data.data;
         if (paper.sections) {
           paper.sections = paper.sections.map((section: Section) => {
-            const isMcqSection = section.title.toLowerCase().includes('multiple choice') ||
-                                  (section.questions[0]?.text && /[A-D]\)/.test(section.questions[0].text));
+            const isMcqSection = section.title.toLowerCase().includes('multiple choice');
             
             const processedQuestions = section.questions.map((question: Question) => {
               let text = question.text;
               
               if (isMcqSection) {
-                const optionRegex = /([A-D])\)\s*([^\n]+)/g;
+                // Replace literal \n with actual line breaks
+                text = text.replace(/\\n/g, '\n');
+                
+                // Extract options using regex
+                const optionRegex = /([A-D]\))\s*([^\n]+)/g;
                 const matches = [...text.matchAll(optionRegex)];
                 
                 if (matches.length >= 4) {
-                  const options = matches.slice(0, 4).map(m => `${m[1]}) ${m[2].trim()}`);
+                  const options = matches.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
                   const firstOptionIndex = text.search(/\n[A-D]\)/);
                   let questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
                   questionText = questionText.replace(/^Question:\s*/i, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
@@ -211,7 +214,7 @@ export default function AssignmentOutput() {
             <p><strong>Subject:</strong> ${questionPaper?.subject}</p>
             <p><strong>Class:</strong> ${questionPaper?.className}</p>
             <hr/>
-            <pre style="font-family: 'Courier New', monospace; font-size: 14px;">${questionPaper.answerKey}</pre>
+            <pre style="font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap;">${questionPaper.answerKey}</pre>
           </body>
         </html>
       `);
@@ -394,32 +397,38 @@ export default function AssignmentOutput() {
                     <div key={qIdx} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            <span className="font-semibold text-gray-900 text-lg">
+                          <div className="flex items-start gap-2 mb-3">
+                            <span className="font-semibold text-gray-900 text-lg flex-shrink-0">
                               {qIdx + 1}.
                             </span>
-                            <span className="text-gray-800">{question.text}</span>
-                          </div>
-                          
-                          {question.options && question.options.length > 0 && (
-                            <div className="ml-6 mt-3 space-y-1.5">
-                              {question.options.map((option, optIdx) => {
-                                const letter = String.fromCharCode(65 + optIdx);
-                                let optionText = option;
-                                if (optionText.match(/^[A-D]\)\s*/)) {
-                                  optionText = optionText.replace(/^[A-D]\)\s*/, '');
-                                }
-                                return (
-                                  <div key={optIdx} className="text-sm text-gray-700">
-                                    <span className="font-medium text-gray-500 mr-2">{letter}.</span>
-                                    <span>{optionText}</span>
-                                  </div>
-                                );
-                              })}
+                            <div className="flex-1">
+                              {/* Question text with line breaks */}
+                              <div className="text-gray-800 whitespace-pre-line">
+                                {question.text}
+                              </div>
+                              
+                              {/* Display MCQ options if available */}
+                              {question.options && question.options.length > 0 && (
+                                <div className="mt-3 ml-4 space-y-1.5">
+                                  {question.options.map((option, optIdx) => {
+                                    const letter = String.fromCharCode(65 + optIdx);
+                                    let optionText = option;
+                                    if (optionText.match(/^[A-D]\)\s*/)) {
+                                      optionText = optionText.replace(/^[A-D]\)\s*/, '');
+                                    }
+                                    return (
+                                      <div key={optIdx} className="text-sm text-gray-700">
+                                        <span className="font-medium text-gray-500 mr-2">{letter}.</span>
+                                        <span>{optionText}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                           <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(question.difficulty)}`}>
                             {question.difficulty}
                           </span>
@@ -441,7 +450,7 @@ export default function AssignmentOutput() {
           </div>
         </div>
 
-        {/* Answer Key Section - Section-wise with Download */}
+        {/* Answer Key Section */}
         {questionPaper.answerKey && (
           <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
             <button
