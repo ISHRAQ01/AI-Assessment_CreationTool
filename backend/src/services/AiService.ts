@@ -15,6 +15,7 @@ interface GenerateParams {
 
 export async function generateQuestionPaper(params: GenerateParams) {
   const totalSections = params.questionTypes.length;
+  const totalQuestions = params.questionTypes.reduce((sum, qt) => sum + qt.numberOfQuestions, 0);
 
   // Check for file content
   const hasFileContent = params.additionalInstructions ? params.additionalInstructions.includes('--- FILE CONTENT START ---') : false;
@@ -29,11 +30,16 @@ export async function generateQuestionPaper(params: GenerateParams) {
     }
   }
 
-  let prompt = `You are an expert exam paper generator. Create a complete question paper.
+  let prompt = `You are an expert exam paper generator. Create a complete question paper with SEPARATE sections for EACH question type.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SOURCE OF QUESTIONS
+CRITICAL: SECTION STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You MUST create EXACTLY ${totalSections} sections - one for EACH question type.
+Do NOT mix different question types in the same section.
+Do NOT create extra sections.
+
 `;
 
   if (fileContentText) {
@@ -57,45 +63,66 @@ Assignment Title: ${params.title}
 Subject: ${params.subject}
 Class: ${params.className}
 Total Marks: ${params.totalMarks}
+Total Questions: ${totalQuestions}
 
 ${userInstructions ? `Additional Instructions: ${userInstructions}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-QUESTION TYPES & DISTRIBUTION (MUST FOLLOW EXACTLY)
+REQUIRED SECTIONS (CREATE EXACTLY ${totalSections} SECTIONS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 `;
 
-  for (const qt of params.questionTypes) {
-    prompt += `► ${qt.type}: ${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each\n`;
+  for (let i = 0; i < params.questionTypes.length; i++) {
+    const qt = params.questionTypes[i];
+    const sectionLetter = String.fromCharCode(65 + i);
+    prompt += `Section ${sectionLetter}: ${qt.type} (${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each)\n`;
+  }
 
+  prompt += `\n`;
+
+  for (let i = 0; i < params.questionTypes.length; i++) {
+    const qt = params.questionTypes[i];
+    const sectionLetter = String.fromCharCode(65 + i);
+    
+    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    prompt += `INSTRUCTIONS FOR SECTION ${sectionLetter} - ${qt.type}\n`;
+    prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    
     if (qt.type === 'Multiple Choice Questions') {
-      prompt += `   **FORMAT FOR EACH MCQ (MUST BE EXACT)**:
-   - Write "Question:" followed by the question text.
-   - Then on a new line, write "A)" and the first option.
-   - Then "B)" and second option.
-   - Then "C)" and third option.
-   - Then "D)" and fourth option.
-   - Then on a new line, write "[Answer: X]" where X is the correct letter.
+      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Multiple Choice Questions.
+      
+Each MCQ MUST follow this EXACT format in the "text" field:
+Question: [your question]?
+A) [option 1]
+B) [option 2]
+C) [option 3]
+D) [option 4]
+[Answer: X]
 
-   **Example (copy this exact style):**
-   Question: What is the capital of France?
-   A) London
-   B) Berlin
-   C) Paris
-   D) Madrid
-   [Answer: C]
+Example:
+Question: What is the capital of France?
+A) London
+B) Berlin
+C) Paris
+D) Madrid
+[Answer: C]
 
-   Do NOT use any other formatting. Do NOT omit the line breaks.\n\n`;
+IMPORTANT: Use \\n for line breaks. Do NOT put options on the same line as the question.\n\n`;
     } 
     else if (qt.type === 'Short Questions') {
-      prompt += `   FORMAT: Plain question text without any options or answer tags.\n\n`;
+      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Short Answer Questions.
+Each question should be a clear, concise question expecting a written answer.
+Do NOT include options or answer tags in the question text.
+Example: Explain the process of photosynthesis.\n\n`;
     }
     else if (qt.type === 'Diagram/Graph-Based Questions') {
-      prompt += `   FORMAT: Description of a diagram or graph to draw/interpret.\n\n`;
+      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Diagram/Graph based questions.
+Example: Draw a labeled diagram of the human heart.\n\n`;
     }
     else if (qt.type === 'Numerical Problems') {
-      prompt += `   FORMAT: Mathematical problem statement with necessary data.\n\n`;
+      prompt += `For Section ${sectionLetter}, create ${qt.numberOfQuestions} Numerical Problems.
+Example: A car travels 120 km in 2 hours. Calculate its speed.\n\n`;
     }
   }
 
@@ -104,47 +131,62 @@ QUESTION TYPES & DISTRIBUTION (MUST FOLLOW EXACTLY)
 JSON OUTPUT STRUCTURE - EXACTLY ${totalSections} SECTIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Generate a JSON response with EXACTLY ${totalSections} sections. Example:
-
 {
   "sections": [`;
 
   for (let i = 0; i < params.questionTypes.length; i++) {
     const qt = params.questionTypes[i];
-    const sectionName = `Section ${String.fromCharCode(65 + i)} - ${qt.type}`;
-    const exampleQuestion = qt.type === 'Multiple Choice Questions' 
-      ? `{\n          "text": "Question: Sample question?\\nA) Option1\\nB) Option2\\nC) Option3\\nD) Option4\\n[Answer: A]",\n          "difficulty": "Easy",\n          "marks": ${qt.marksPerQuestion}\n        }`
-      : `{\n          "text": "Sample ${qt.type.toLowerCase()} question.",\n          "difficulty": "Moderate",\n          "marks": ${qt.marksPerQuestion}\n        }`;
+    const sectionLetter = String.fromCharCode(65 + i);
+    const sectionName = `Section ${sectionLetter} - ${qt.type}`;
     
     prompt += `
     {
       "title": "${sectionName}",
       "instruction": "Attempt all questions. Each question carries ${qt.marksPerQuestion} marks.",
-      "questions": [
-        ${exampleQuestion}
+      "questions": [`;
+
+    // Add example questions
+    for (let j = 0; j < qt.numberOfQuestions; j++) {
+      if (qt.type === 'Multiple Choice Questions') {
+        prompt += `
+        {
+          "text": "Question: Sample MCQ question ${j+1}?\\\\nA) Option A\\\\nB) Option B\\\\nC) Option C\\\\nD) Option D\\\\n[Answer: A]",
+          "difficulty": "${j === 0 ? 'Easy' : j === 1 ? 'Moderate' : 'Challenging'}",
+          "marks": ${qt.marksPerQuestion}
+        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
+      } else {
+        prompt += `
+        {
+          "text": "Sample ${qt.type.toLowerCase()} question ${j+1}.",
+          "difficulty": "${j === 0 ? 'Easy' : j === 1 ? 'Moderate' : 'Challenging'}",
+          "marks": ${qt.marksPerQuestion}
+        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
+      }
+    }
+    
+    prompt += `
       ]
     }${i < params.questionTypes.length - 1 ? ',' : ''}`;
   }
 
   prompt += `
   ],
-  "answerKey": "1. C\\n2. B\\n3. (Sample answer)\\n..."
+  "answerKey": "1. Answer for first question\\\\n2. Answer for second question\\\\n3. Answer for third question\\\\n..."
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULES (STRICT)
+CRITICAL RULES - MUST FOLLOW EXACTLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Exactly ${totalSections} sections.
-2. Exact question counts:
-`;
-  for (const qt of params.questionTypes) {
-    prompt += `   - ${qt.type}: ${qt.numberOfQuestions} questions\n`;
-  }
-  prompt += `
-3. For MCQs, the "text" field MUST contain the question, four option lines (A), B), C), D)), and the [Answer: X] line.
-4. For non‑MCQs, the "text" field MUST NOT contain options or answer tags.
-5. Use difficulty: 60% Easy, 30% Moderate, 10% Challenging.
-6. Return ONLY valid JSON. No extra text.
+
+1. Create EXACTLY ${totalSections} sections - NO MORE, NO LESS.
+2. Each section must contain ONLY its designated question type.
+3. Section titles MUST be in format "Section X - Question Type"
+4. For MCQ: Include 4 options (A, B, C, D) and [Answer: X] with \\n line breaks.
+5. For non-MCQ: NO options, just the question text.
+6. The answerKey must contain ${totalQuestions} answers, numbered 1 to ${totalQuestions}.
+7. For MCQ answers, use just the letter (e.g., "1. C").
+8. For short questions, write a brief model answer (2-3 sentences).
+9. Return ONLY valid JSON. No extra text.
 `;
 
   try {
@@ -158,30 +200,41 @@ RULES (STRICT)
 
     const response = completion.choices[0]?.message?.content;
     if (!response) throw new Error('No response from AI');
-    console.log('AI response length:', response.length);
+    console.log('AI response received, length:', response.length);
+    
     const parsed = JSON.parse(response);
     
     if (!parsed.sections || !Array.isArray(parsed.sections)) {
       throw new Error('Invalid response: missing sections array');
     }
     
-    // Trim extra sections
+    // Trim extra sections if AI added more
     if (parsed.sections.length > totalSections) {
       console.warn(`AI returned ${parsed.sections.length} sections, expected ${totalSections}. Truncating.`);
       parsed.sections = parsed.sections.slice(0, totalSections);
     }
     
-    // Post‑process: ensure non‑MCQ questions have no options
-    for (let i = 0; i < parsed.sections.length; i++) {
+    // Fix section titles if needed
+    for (let i = 0; i < parsed.sections.length && i < params.questionTypes.length; i++) {
+      const expectedType = params.questionTypes[i].type;
+      const expectedTitle = `Section ${String.fromCharCode(65 + i)} - ${expectedType}`;
+      if (parsed.sections[i].title !== expectedTitle) {
+        console.log(`Fixing section title: ${parsed.sections[i].title} -> ${expectedTitle}`);
+        parsed.sections[i].title = expectedTitle;
+      }
+    }
+    
+    // Clean non-MCQ questions
+    for (let i = 0; i < parsed.sections.length && i < params.questionTypes.length; i++) {
+      const expectedType = params.questionTypes[i].type;
       const section = parsed.sections[i];
-      const expectedType = params.questionTypes[i]?.type;
-      if (expectedType && expectedType !== 'Multiple Choice Questions' && section.questions) {
+      
+      if (expectedType !== 'Multiple Choice Questions' && section.questions) {
         section.questions = section.questions.map((q: any) => {
           if (q.text && /[A-D]\)/.test(q.text)) {
-            // Remove options and answer tag
-            let clean = q.text.replace(/(\n[A-D]\)\s*[^\n]+)+/g, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
-            if (!clean) clean = q.text.split('\n')[0];
-            return { ...q, text: clean };
+            let cleanText = q.text.replace(/(\n[A-D]\)\s*[^\n]+)+/g, '').replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+            if (!cleanText) cleanText = q.text.split('\n')[0];
+            return { ...q, text: cleanText };
           }
           return q;
         });
@@ -189,8 +242,8 @@ RULES (STRICT)
     }
     
     const totalGenerated = parsed.sections.reduce((sum: number, s: any) => sum + (s.questions?.length || 0), 0);
-    const expectedTotal = params.questionTypes.reduce((sum, qt) => sum + qt.numberOfQuestions, 0);
-    console.log(`✅ Generated ${totalGenerated} / ${expectedTotal} questions`);
+    console.log(`✅ Generated ${totalGenerated} / ${totalQuestions} questions`);
+    console.log(`✅ Created ${parsed.sections.length} sections`);
     
     return parsed;
   } catch (error) {

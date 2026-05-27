@@ -106,7 +106,7 @@ const worker = new Worker<JobData>(
       }
       
       // ============================================================
-      // 🔧 Generate SECTION-WISE Answer Key with actual answers
+      // 🔧 Generate SECTION-WISE Answer Key with proper separation
       // ============================================================
       let sectionWiseAnswerKey = '';
       let globalQuestionNumber = 1;
@@ -123,7 +123,7 @@ const worker = new Worker<JobData>(
           const question = section.questions[q];
           let answer = '';
           
-          // First check if we have answer from AI's answerKey
+          // First check if we have answer from AI's answerKey using global number
           if (answerMap.has(globalQuestionNumber)) {
             answer = answerMap.get(globalQuestionNumber) || '';
           }
@@ -139,15 +139,18 @@ const worker = new Worker<JobData>(
           // If still no answer, provide appropriate placeholder
           if (!answer) {
             if (isMcqSection) {
-              answer = 'Not specified in question';
+              answer = 'Not specified';
             } else {
-              answer = 'Answer will vary based on student response. Expected key points: The answer should cover the main concepts related to the question.';
+              answer = 'Answer will vary. Expected key points should be provided by teacher.';
             }
           }
           
           sectionWiseAnswerKey += `${q + 1}. ${answer}\n`;
           globalQuestionNumber++;
         }
+        
+        // Add extra spacing between sections
+        sectionWiseAnswerKey += `\n`;
       }
       
       const finalAnswerKey = sectionWiseAnswerKey;
