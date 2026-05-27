@@ -1,25 +1,144 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAssignmentStore } from '@/store/AssignmentStore';
 import { useWebSocket } from '@/hooks/UseWebSocket';
+import {
+  Home, Users, BookOpen, Wrench, Library,
+  Settings, Bell, ChevronDown, Search, SlidersHorizontal,
+  MoreVertical, Eye, Trash2, Plus, Sparkles, UserCircle
+} from 'lucide-react';
 
+// ── VedaAI brand logo ──────────────────────────────────────────────
+function VedaLogo({ size = 32 }: { size?: number }) {
+  return (
+    <div
+      className="flex items-center justify-center flex-shrink-0"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 8,
+        background: 'linear-gradient(135deg, #FF6B35 0%, #E84646 100%)',
+      }}
+    >
+      <span style={{ color: '#fff', fontWeight: 900, fontSize: size * 0.5, fontFamily: 'Georgia, serif' }}>V</span>
+    </div>
+  );
+}
+
+// ── Empty state illustration (SVG) ────────────────────────────────
+function EmptyIllustration() {
+  return (
+    <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="90" cy="95" r="70" fill="#EBEBEB" />
+      <rect x="55" y="45" width="75" height="95" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1.5" />
+      <rect x="65" y="60" width="35" height="5" rx="2.5" fill="#9CA3AF" />
+      <rect x="65" y="72" width="55" height="4" rx="2" fill="#D1D5DB" />
+      <rect x="65" y="82" width="50" height="4" rx="2" fill="#D1D5DB" />
+      <rect x="65" y="92" width="55" height="4" rx="2" fill="#D1D5DB" />
+      <rect x="65" y="102" width="45" height="4" rx="2" fill="#D1D5DB" />
+      <circle cx="112" cy="110" r="30" fill="white" stroke="#E5E7EB" strokeWidth="1.5" />
+      <circle cx="112" cy="110" r="25" fill="#F9FAFB" />
+      <path d="M100 98 L124 122 M100 122 L124 98" stroke="#EF4444" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="130" cy="132" r="6" fill="#3B82F6" />
+      <path d="M75 48 C70 35 55 32 58 22" stroke="#1F2937" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <path d="M58 22 C56 18 60 16 62 20" stroke="#1F2937" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      <path d="M62 26 L58 22 L54 26" stroke="#1F2937" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M82 40 L85 34 L88 40 M83.5 38 L86.5 38" stroke="#1F2937" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M125 62 L125 54 M121 58 L129 58" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ── Card 3-dot menu ────────────────────────────────────────────────
+function AssignmentCardMenu({
+  assignmentId, isCompleted, generatedPaperId, onDelete
+}: {
+  assignmentId: string;
+  isCompleted: boolean;
+  generatedPaperId?: string;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className="p-1.5 hover:bg-gray-100 rounded-md text-gray-400 hover:text-gray-700 transition-colors"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-8 z-30 bg-white rounded-xl shadow-xl border border-gray-100 py-1 w-44">
+          {isCompleted && generatedPaperId && (
+            <Link
+              href={`/assignment/${assignmentId}`}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <Eye size={14} className="text-gray-400" />
+              View Assignment
+            </Link>
+          )}
+          <button
+            onClick={() => { onDelete(assignmentId); setOpen(false); }}
+            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={14} />
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Status badge ───────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    completed: 'bg-green-100 text-green-700',
+    generating: 'bg-amber-100 text-amber-700',
+    failed: 'bg-red-100 text-red-600',
+    draft: 'bg-gray-100 text-gray-500',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${styles[status] || styles.draft}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${
+        status === 'completed' ? 'bg-green-500' :
+        status === 'generating' ? 'bg-amber-400' :
+        status === 'failed' ? 'bg-red-500' : 'bg-gray-400'
+      }`} />
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
+// ── Main Dashboard ─────────────────────────────────────────────────
 export default function Dashboard() {
   const { assignments, setAssignments, updateAssignment, isLoading, setIsLoading } = useAssignmentStore();
   const { lastMessage } = useWebSocket();
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
+  useEffect(() => { fetchAssignments(); }, []);
 
   useEffect(() => {
-    if (lastMessage && lastMessage.type === 'GENERATION_COMPLETED') {
-      updateAssignment(lastMessage.assignmentId, { 
-        status: 'completed', 
-        generatedPaperId: lastMessage.questionPaperId 
+    if (!lastMessage) return;
+    if (lastMessage.type === 'GENERATION_COMPLETED') {
+      updateAssignment(lastMessage.assignmentId, {
+        status: 'completed',
+        generatedPaperId: lastMessage.questionPaperId,
       });
-    } else if (lastMessage && lastMessage.type === 'GENERATION_FAILED') {
+    } else if (lastMessage.type === 'GENERATION_FAILED') {
       updateAssignment(lastMessage.assignmentId, { status: 'failed' });
     }
   }, [lastMessage, updateAssignment]);
@@ -27,156 +146,333 @@ export default function Dashboard() {
   const fetchAssignments = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get('/api/assignments');
-      if (response.data.success) {
-        setAssignments(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch assignments:', error);
+      const res = await axios.get('/api/assignments');
+      if (res.data.success) setAssignments(res.data.data);
+    } catch (e) {
+      console.error('Failed to fetch assignments:', e);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this assignment?')) return;
+    if (!confirm('Delete this assignment?')) return;
     try {
       await axios.delete(`/api/assignments/${id}`);
       useAssignmentStore.getState().deleteAssignment(id);
-    } catch (error) {
-      console.error('Failed to delete:', error);
+    } catch (e) {
+      console.error('Failed to delete:', e);
     }
   };
 
-  const filteredAssignments = assignments.filter(a =>
+  const filtered = assignments.filter(a =>
     a.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const navItems = [
+    { icon: Home, label: 'Home', active: false },
+    { icon: Users, label: 'My Groups', active: false },
+    { icon: BookOpen, label: 'Assignments', active: true, badge: assignments.length },
+    { icon: Wrench, label: "AI Teacher's Toolkit", active: false },
+    { icon: Library, label: 'My Library', active: false },
+  ];
+
   return (
-    <div className="min-h-screen bg-white flex">
-      {/* SIDEBAR - Fixed left */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full">
-        <div className="p-6">
-          {/* Logo */}
-          <h1 className="text-2xl font-bold text-indigo-600 mb-8">VedaAI</h1>
-          
-          {/* Navigation */}
-          <nav className="space-y-1">
-            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Home</a>
-            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">My Groups</a>
-            <a href="#" className="block px-3 py-2 text-sm text-indigo-600 bg-indigo-50 rounded-lg font-medium">Assignments</a>
-            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">AI Teacher's Toolkit</a>
-            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">My Library</a>
-          </nav>
+    <div className="min-h-screen flex font-sans" style={{ background: 'linear-gradient(to bottom, #eee, #dadada)' }}>
 
-          {/* Settings */}
-          <div className="mt-8 pt-8 border-t border-gray-200">
-            <p className="text-xs text-gray-400 mb-2">Settings</p>
-            <a href="#" className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Settings</a>
+      {/* ── SIDEBAR ────────────────────────────────────────────────── */}
+      <aside className="w-60 bg-white border-r border-gray-100 flex flex-col fixed h-full z-20 shadow-sm">
+        
+        <div className="px-5 pt-5 pb-4">
+          <div className="flex items-center gap-2.5">
+            <VedaLogo size={36} />
+            <span className="text-xl font-bold text-gray-900 tracking-tight">VedaAI</span>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-auto p-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600">Delhi Public School</p>
-          <p className="text-xs text-gray-400">Bokaro Steel City</p>
+        {/* ===== ADDED: Create Assignment Button Below Logo ===== */}
+        <div className="px-4 pb-5">
+          <Link
+            href="/create"
+            className="flex items-center justify-center gap-2 w-full py-2 px-10 rounded-full text-white text-sm font-medium transition-all hover:opacity-90 active:scale-95"
+            style={{ 
+              background: '#272727', 
+              border: '4px solid #ff7950',
+              boxShadow: '0px 16px 24px rgba(255,255,255,0.12), 0px 32px 24px rgba(255,255,255,0.2), inset 0px -1px 3.5px rgba(177,177,177,0.6), inset 0px 0px 34.5px rgba(255,255,255,0.25)'
+            }}
+          >
+            <Plus size={18} strokeWidth={2.5} />
+            Create Assignment
+          </Link>
         </div>
-      </div>
+        {/* ===== END ADDED ===== */}
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1 ml-64">
-        {/* Top Bar */}
-        <div className="border-b border-gray-200 bg-white px-8 py-4 flex justify-between items-center">
-          <span className="text-sm text-gray-500">Assignments</span>
-          <span className="text-sm text-gray-600">John Doe</span>
-        </div>
-
-        {/* Content */}
-        <div className="p-8">
-          {/* Header with Create Button */}
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900">Assignment</h2>
-            <Link
-              href="/create"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700"
+        {/* Navigation */}
+        <nav className="flex-1 px-3 space-y-0.5">
+          {navItems.map(({ icon: Icon, label, active, badge }) => (
+            <a
+              key={label}
+              href="#"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                active
+                  ? 'bg-gray-100 text-gray-900 font-medium'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              }`}
             >
-              + Create Assignment
-            </Link>
-          </div>
+              <Icon size={16} className={active ? 'text-gray-700' : 'text-gray-400'} />
+              <span className="flex-1">{label}</span>
+              {badge && badge > 0 && (
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full text-white"
+                  style={{ background: 'linear-gradient(135deg, #FF6B35, #E84646)', minWidth: 20, textAlign: 'center' }}>
+                  {badge}
+                </span>
+              )}
+            </a>
+          ))}
+        </nav>
 
-          {/* Search Bar */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search Assignment"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
+        {/* Bottom */}
+        <div className="px-3 pb-5 space-y-0.5">
+          <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors">
+            <Settings size={16} className="text-gray-400" />
+            Settings
+          </a>
+          <div className="mt-3 mx-1 p-3 bg-gray-50 rounded-xl flex items-center gap-3">
+  {/* Avatar Image - 59px x 56px */}
+  <img 
+    src="/avataat.png" 
+    alt="School" 
+    style={{ 
+      width: '59px', 
+      height: '56px', 
+      borderRadius: '100px',
+      objectFit: 'cover'
+    }}
+  />
+  <div className="min-w-0">
+    {/* Delhi Public School - 16px, Bold, #303030 */}
+    <p 
+      className="font-bold truncate"
+      style={{
+        fontFamily: 'Bricolage Grotesque, sans-serif',
+        fontSize: '16px',
+        fontWeight: 700,
+        color: '#303030',
+        letterSpacing: '-0.04em',
+        lineHeight: '140%'
+      }}
+    >
+      Delhi Public School
+    </p>
+    {/* Bokaro Steel City - 14px, Regular, #5E5E5E */}
+    <p 
+      className="truncate"
+      style={{
+        fontFamily: 'Bricolage Grotesque, sans-serif',
+        fontSize: '14px',
+        fontWeight: 400,
+        color: '#5E5E5E',
+        letterSpacing: '-0.04em',
+        lineHeight: '140%'
+      }}
+    >
+      Bokaro Steel City
+    </p>
+  </div>
+</div>
+        </div>
+      </aside>
 
-          {/* Assignments List */}
+      {/* ── MAIN CONTENT ───────────────────────────────────────────── */}
+      <div className="flex-1 ml-60 flex flex-col min-h-screen">
+
+        {/* Top Bar */}
+        <header className="bg-white border-b border-gray-100 px-8 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
+          <button className="p-1.5 text-gray-400 hover:text-gray-600">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M11 3L5 9L11 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="flex items-center gap-1.5 text-sm text-gray-400">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="1" width="4.5" height="4.5" rx="1" fill="currentColor" opacity="0.5"/>
+              <rect x="8.5" y="1" width="4.5" height="4.5" rx="1" fill="currentColor" opacity="0.5"/>
+              <rect x="1" y="8.5" width="4.5" height="4.5" rx="1" fill="currentColor" opacity="0.5"/>
+              <rect x="8.5" y="8.5" width="4.5" height="4.5" rx="1" fill="currentColor" opacity="0.5"/>
+            </svg>
+            Assignment
+          </div>
+          <div className="ml-auto flex items-center gap-4">
+  <div className="relative">
+    <Bell size={18} className="text-gray-500" />
+    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full text-white text-[8px] flex items-center justify-center font-bold">1</span>
+  </div>
+ <div className="flex items-center gap-2 cursor-pointer">
+  <img 
+  src="/avataat.png" 
+  alt="Profile" 
+  style={{ 
+    width: '32px', 
+    height: '32px', 
+    borderRadius: '100px',
+    gap: '10px',
+    opacity: 1 
+  }}
+/>
+  <div className="flex items-center gap-1">
+    <span className="text-sm font-medium text-gray-700">John Doe</span>
+    <ChevronDown size={14} className="text-gray-400" />
+  </div>
+</div>
+</div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 px-8 py-7">
+
           {isLoading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
-          ) : filteredAssignments.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-900 font-medium mb-2">No assignments yet</p>
-              <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
-                Create your first assignment to start collecting and grading student submissions. 
-                You can set up rubrics, define marking criteria, and let AI assist with grading.
-              </p>
+            <div className="flex items-center justify-center h-64">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+                <p className="text-sm text-gray-400">Loading assignments…</p>
+              </div>
+            </div>
+          ) : assignments.length === 0 ? (
+            /* ── EMPTY STATE ── */
+            <div className="flex flex-col items-center justify-center min-h-[75vh] gap-8">
+              <EmptyIllustration />
+              <div className="text-center max-w-md">
+                <h2 
+                  className="font-bold mb-2 leading-relaxed"
+                  style={{
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
+                    fontSize: '20px',
+                    color: '#303030',
+                    letterSpacing: '-0.8px'
+                  }}
+                >
+                  No assignments yet
+                </h2>
+                <p 
+                  className="leading-relaxed"
+                  style={{
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
+                    fontSize: '16px',
+                    color: 'rgba(94,94,94,0.8)',
+                    letterSpacing: '-0.64px'
+                  }}
+                >
+                  Create your first assignment to start collecting and grading student submissions.
+                  You can set up rubrics, define marking criteria, and let AI assist with grading.
+                </p>
+              </div>
               <Link
                 href="/create"
-                className="text-indigo-600 text-sm font-medium hover:text-indigo-700"
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-medium transition-all hover:opacity-90"
+                style={{ 
+                  background: '#181818',
+                  border: '1.5px solid rgba(255,255,255,0.5)',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                  fontFamily: 'Bricolage Grotesque, sans-serif',
+                  fontSize: '16px',
+                  letterSpacing: '-0.64px'
+                }}
               >
-                + Create Your First Assignment
+                <Plus size={16} />
+                Create Your First Assignment
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredAssignments.map((assignment) => (
-                <div key={assignment._id} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{assignment.title}</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Assign on: {new Date(assignment.createdAt).toLocaleDateString()} | 
-                        Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-4">
-                      {assignment.status === 'completed' && assignment.generatedPaperId && (
-                        <Link
-                          href={`/assignment/${assignment._id}`}
-                          className="text-indigo-600 text-sm hover:text-indigo-800"
-                        >
-                          View Assignment
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => handleDelete(assignment._id)}
-                        className="text-red-500 text-sm hover:text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      assignment.status === 'generating' ? 'bg-yellow-100 text-yellow-700' :
-                      assignment.status === 'failed' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {assignment.status}
-                    </span>
-                  </div>
+            /* ── FILLED STATE ── */
+            <>
+              {/* Section Header */}
+              <div className="flex items-center gap-2.5 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm shadow-green-300" />
+                <h1 className="text-xl font-bold text-gray-900">Assignments</h1>
+              </div>
+              <p className="text-sm text-gray-400 mb-6 pl-5">Manage and create assignments for your classes.</p>
+
+              {/* Filter + Search Row */}
+              <div className="flex items-center justify-between mb-6 gap-4">
+                <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                  <SlidersHorizontal size={15} />
+                  Filter By
+                </button>
+                <div className="relative w-72">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search Assignment"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
+                  />
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Cards Grid */}
+              {filtered.length === 0 ? (
+                <div className="text-center py-12 text-gray-400 text-sm">No results for "{searchTerm}"</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filtered.map((assignment) => (
+                    <div
+                      key={assignment._id}
+                      className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-shadow group"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <Link
+                          href={assignment.status === 'completed' ? `/assignment/${assignment._id}` : '#'}
+                          className="text-base font-bold text-gray-900 hover:underline underline-offset-2 leading-snug pr-2"
+                        >
+                          {assignment.title}
+                        </Link>
+                        <AssignmentCardMenu
+                          assignmentId={assignment._id}
+                          isCompleted={assignment.status === 'completed'}
+                          generatedPaperId={assignment.generatedPaperId}
+                          onDelete={handleDelete}
+                        />
+                      </div>
+
+                      <div className="mb-3">
+                        <StatusBadge status={assignment.status} />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-50">
+                        <span>
+                          <span className="font-medium text-gray-600">Assigned on</span> :{
+                          new Date(assignment.createdAt).toLocaleDateString('en-GB', {
+                            day: '2-digit', month: '2-digit', year: 'numeric'
+                          }).replace(/\//g, '-')}
+                        </span>
+                        <span>
+                          <span className="font-medium text-gray-600">Due</span> :{
+                          new Date(assignment.dueDate).toLocaleDateString('en-GB', {
+                            day: '2-digit', month: '2-digit', year: 'numeric'
+                          }).replace(/\//g, '-')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
-        </div>
+        </main>
       </div>
+
+      {/* ── FLOATING CREATE BUTTON (when assignments exist) ─────── */}
+      {assignments.length > 0 && (
+        <Link
+          href="/create"
+          className="fixed bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-semibold z-30 transition-all hover:scale-105 active:scale-95"
+          style={{ background: '#111', boxShadow: '0 4px 20px rgba(0,0,0,0.25)' }}
+        >
+          <Plus size={16} />
+          Create Assignment
+        </Link>
+      )}
     </div>
   );
 }
