@@ -31,3 +31,159 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .no-print { display: none !important; }
   body { background: white; }
 }
+
+/* ============================================================ */
+/* EXAM PAPER STYLING - Clean School Format */
+/* ============================================================ */
+
+.exam-paper {
+  font-family: 'Times New Roman', Times, serif;
+  background: white;
+  padding: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* School Header - Centered */
+.exam-paper .school-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.exam-paper .school-name {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.exam-paper .school-city {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Subject & Class - Centered */
+.exam-paper .subject-class {
+  text-align: center;
+  margin: 15px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Time & Marks Row */
+.exam-paper .time-marks {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0 10px 0;
+  font-size: 14px;
+}
+
+/* Instructions - Left aligned */
+.exam-paper .instructions {
+  text-align: left;
+  font-style: italic;
+  margin: 10px 0 15px 0;
+  font-size: 13px;
+}
+
+/* Student Info - Left aligned, each on new line */
+.exam-paper .student-info {
+  margin: 15px 0;
+  padding: 10px 0;
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+}
+
+.exam-paper .student-info div {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* Sections - Centered Title */
+.exam-paper .section {
+  margin: 25px 0 20px 0;
+}
+
+.exam-paper .section-title {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+.exam-paper .section-subtitle {
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Questions */
+.exam-paper .question {
+  margin: 12px 0;
+}
+
+.exam-paper .question-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.exam-paper .question-left {
+  flex: 1;
+}
+
+.exam-paper .question-number {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.exam-paper .question-text {
+  display: inline;
+  font-size: 14px;
+}
+
+.exam-paper .question-right {
+  white-space: nowrap;
+  text-align: right;
+  font-size: 13px;
+}
+
+.exam-paper .difficulty-badge {
+  color: #666;
+  margin-right: 6px;
+}
+
+.exam-paper .question-marks {
+  font-weight: bold;
+}
+
+/* MCQ Options */
+.exam-paper .options {
+  margin-left: 28px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.exam-paper .option {
+  margin: 3px 0;
+  font-size: 13px;
+}
+
+/* End of Paper */
+.exam-paper .end-of-paper {
+  text-align: center;
+  margin-top: 30px;
+  font-style: italic;
+  font-size: 13px;
+}
+
+@media print {
+  .exam-paper {
+    padding: 20px;
+  }
+  button {
+    display: none;
+  }
+}

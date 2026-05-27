@@ -7,6 +7,8 @@ import {
   FileText, Clock, Calendar, BookOpen, Award, Sparkles,
   Loader2, Home, Users, Wrench, Library, Settings, ChevronDown
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface Question {
   text: string;
@@ -97,10 +99,7 @@ export default function AssignmentOutput() {
             const processedQuestions = section.questions.map((question: Question) => {
               let text = question.text;
               
-              // Replace literal \n with actual line breaks for display
               text = text.replace(/\\n/g, '\n');
-              
-              // Remove prefixes
               text = text.replace(/^Short question:\s*/i, '');
               text = text.replace(/^Short question\s*/i, '');
               text = text.replace(/^Numerical problem:\s*/i, '');
@@ -125,7 +124,6 @@ export default function AssignmentOutput() {
                 }
               }
               
-              // Clean non-MCQ questions
               const cleanText = text.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
               return { ...question, text: cleanText };
             });
@@ -142,92 +140,117 @@ export default function AssignmentOutput() {
     }
   };
 
-  const handlePrint = () => {
-    const printContent = printRef.current;
-    if (printContent) {
-      const originalTitle = document.title;
-      document.title = `${assignment?.title || 'Question Paper'} - VedaAI`;
+  const downloadAsPDF = async (elementId: string, filename: string) => {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
       
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>${assignment?.title || 'Question Paper'}</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .school-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-                .paper-title { font-size: 20px; font-weight: bold; margin: 20px 0; text-align: center; }
-                .info-row { display: flex; justify-content: space-between; margin: 10px 0; }
-                .student-info { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
-                .section { margin: 25px 0; }
-                .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-                .question { margin: 15px 0; padding: 10px; border: 1px solid #eee; border-radius: 5px; }
-                .options { margin-left: 20px; margin-top: 8px; }
-                .option { margin: 3px 0; }
-                .difficulty { font-size: 12px; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-left: 10px; }
-                .easy { background: #d1fae5; color: #065f46; }
-                .moderate { background: #fef3c7; color: #92400e; }
-                .challenging { background: #fee2e2; color: #991b1b; }
-                .marks { float: right; font-weight: bold; }
-                .answer-key { margin-top: 30px; padding: 15px; background: #f9fafb; border-radius: 8px; }
-                hr { margin: 20px 0; }
-              </style>
-            </head>
-            <body>
-              ${printContent.innerHTML}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      });
+      
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 280;
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 280;
       }
-      document.title = originalTitle;
+      
+      pdf.save(`${filename}.pdf`);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Failed to generate PDF. Please try again.');
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!printRef.current) return;
+    
+    // Create a temporary clone without answer key
+    const clone = printRef.current.cloneNode(true) as HTMLElement;
+    const answerKeyDiv = clone.querySelector('.answer-key-section');
+    if (answerKeyDiv) {
+      answerKeyDiv.remove();
+    }
+    
+    // Add temporary ID to the clone
+    const tempId = 'temp-pdf-content';
+    clone.id = tempId;
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    document.body.appendChild(clone);
+    
+    await downloadAsPDF(tempId, assignment?.title || 'Question_Paper');
+    
+    // Remove the temporary element
+    document.body.removeChild(clone);
+  };
+
+  const handleDownloadAnswerKey = async () => {
+    if (!questionPaper?.answerKey) return;
+    
+    // Create answer key HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.id = 'temp-answerkey';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '0';
+    tempDiv.innerHTML = `
+      <div style="padding: 40px; font-family: Arial, sans-serif; max-width: 800px;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #ddd; padding-bottom: 20px;">
+          <h1 style="font-size: 24px; margin-bottom: 10px;">Delhi Public School, Sector-4, Bokaro</h1>
+          <p style="font-size: 14px; color: #666;">Affiliated to CBSE | Excellence in Education</p>
+          <h2 style="font-size: 18px; margin: 20px 0 10px;">ANSWER KEY</h2>
+          <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+            <span><strong>Assignment:</strong> ${assignment?.title}</span>
+            <span><strong>Subject:</strong> ${questionPaper?.subject}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+            <span><strong>Class:</strong> ${questionPaper?.className}</span>
+            <span><strong>Maximum Marks:</strong> ${questionPaper?.maxMarks}</span>
+          </div>
+        </div>
+        <div style="margin: 20px 0;">
+          <pre style="font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap; line-height: 1.5;">${questionPaper.answerKey.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #999;">
+          Generated by VedaAI - AI-Powered Assessment Platform
+        </div>
+      </div>
+    `;
+    document.body.appendChild(tempDiv);
+    
+    await downloadAsPDF('temp-answerkey', `Answer_Key_${assignment?.title || 'Assignment'}`);
+    
+    document.body.removeChild(tempDiv);
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleDownloadPDF = () => {
-    handlePrint();
-  };
-
-  const handleDownloadAnswerKey = () => {
-    if (!questionPaper?.answerKey) return;
-    
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Answer Key - ${assignment?.title || 'Assignment'}</title>
-            <style>
-              body { font-family: 'Courier New', monospace; margin: 40px; line-height: 1.6; }
-              h1 { text-align: center; color: #333; }
-              .section { margin: 20px 0; }
-              .section-title { font-size: 18px; font-weight: bold; background: #f0f0f0; padding: 10px; }
-              .answer { margin: 5px 0; }
-              hr { margin: 20px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Answer Key</h1>
-            <p><strong>Assignment:</strong> ${assignment?.title}</p>
-            <p><strong>Subject:</strong> ${questionPaper?.subject}</p>
-            <p><strong>Class:</strong> ${questionPaper?.className}</p>
-            <hr/>
-            <pre style="font-family: 'Courier New', monospace; font-size: 14px; white-space: pre-wrap;">${questionPaper.answerKey}</pre>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -308,7 +331,7 @@ export default function AssignmentOutput() {
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium hover:shadow-lg transition"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-black rounded-xl text-sm font-medium hover:shadow-lg transition"
             >
               <Download size={16} />
               Download PDF
@@ -409,7 +432,6 @@ export default function AssignmentOutput() {
                               {qIdx + 1}.
                             </span>
                             <div className="flex-1">
-                              {/* Use whitespace-pre-line to handle \n correctly */}
                               <div className="text-gray-800 whitespace-pre-line">
                                 {question.text}
                               </div>
@@ -458,7 +480,7 @@ export default function AssignmentOutput() {
 
         {/* Answer Key Section */}
         {questionPaper.answerKey && (
-          <div className="mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="answer-key-section mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
             <button
               onClick={() => setShowAnswerKey(!showAnswerKey)}
               className="w-full bg-gradient-to-r from-gray-800 to-gray-900 p-4 flex items-center justify-between hover:from-gray-700 hover:to-gray-800 transition"
