@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Download, Printer, Share2, Copy, Check, 
+import {
+  ArrowLeft, Download, Printer, Share2, Copy, Check,
   FileText, Clock, Calendar, BookOpen, Award, Sparkles,
   Loader2, Home, Users, Wrench, Library, Settings, ChevronDown,
   ChevronLeft, RefreshCw
@@ -91,7 +91,7 @@ function printPaper(el?: HTMLElement | null) {
 export default function AssignmentOutput() {
   const router = useRouter();
   const { id } = router.query;
-  
+
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [questionPaper, setQuestionPaper] = useState<QuestionPaper | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +102,7 @@ export default function AssignmentOutput() {
     rollNumber: '',
     section: '',
   });
-  
+
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -116,9 +116,9 @@ export default function AssignmentOutput() {
       if (response.data.success) {
         const assignmentData = response.data.data;
         setAssignment(assignmentData);
-        
+
         if (assignmentData.generatedPaperId) {
-          const paperId = typeof assignmentData.generatedPaperId === 'object' 
+          const paperId = typeof assignmentData.generatedPaperId === 'object'
             ? assignmentData.generatedPaperId._id || assignmentData.generatedPaperId.toString()
             : assignmentData.generatedPaperId;
           await fetchQuestionPaper(paperId);
@@ -140,27 +140,27 @@ export default function AssignmentOutput() {
         if (paper.sections) {
           paper.sections = paper.sections.map((section: Section) => {
             const isMcqSection = section.title.toLowerCase().includes('multiple choice');
-            
+
             const processedQuestions = section.questions.map((question: Question) => {
               let text = question.text;
-              
+
               text = text.replace(/\\n/g, '\n');
               text = text.replace(/^Short question:\s*/i, '');
               text = text.replace(/^Short question\s*/i, '');
               text = text.replace(/^Numerical problem:\s*/i, '');
               text = text.replace(/^Diagram question:\s*/i, '');
               text = text.replace(/^Question:\s*/i, '');
-              
+
               if (isMcqSection) {
                 const optionRegex = /([A-D]\))\s*([^\n]+)/g;
                 const matches = [...text.matchAll(optionRegex)];
-                
+
                 if (matches.length >= 4) {
                   const options = matches.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
                   const firstOptionIndex = text.search(/\n[A-D]\)/);
                   let questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
                   questionText = questionText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
-                  
+
                   return {
                     ...question,
                     text: questionText,
@@ -168,11 +168,11 @@ export default function AssignmentOutput() {
                   };
                 }
               }
-              
+
               const cleanText = text.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
               return { ...question, text: cleanText };
             });
-            
+
             return { ...section, questions: processedQuestions };
           });
         }
@@ -188,36 +188,36 @@ export default function AssignmentOutput() {
   const downloadAsPDF = async (elementId: string, filename: string) => {
     const element = document.getElementById(elementId);
     if (!element) return;
-    
+
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
         logging: false,
         useCORS: true
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         unit: 'mm',
         format: 'a4',
         orientation: 'portrait'
       });
-      
+
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
-      
+
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= 280;
-      
+
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= 280;
       }
-      
+
       pdf.save(`${filename}.pdf`);
     } catch (error) {
       console.error('PDF generation error:', error);
@@ -227,27 +227,27 @@ export default function AssignmentOutput() {
 
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
-    
+
     const clone = printRef.current.cloneNode(true) as HTMLElement;
     const answerKeyDiv = clone.querySelector('.answer-key-section');
     if (answerKeyDiv) {
       answerKeyDiv.remove();
     }
-    
+
     const tempId = 'temp-pdf-content';
     clone.id = tempId;
     clone.style.position = 'absolute';
     clone.style.left = '-9999px';
     clone.style.top = '0';
     document.body.appendChild(clone);
-    
+
     await downloadAsPDF(tempId, assignment?.title || 'Question_Paper');
     document.body.removeChild(clone);
   };
 
   const handleDownloadAnswerKey = async () => {
     if (!questionPaper?.answerKey) return;
-    
+
     const tempDiv = document.createElement('div');
     tempDiv.id = 'temp-answerkey';
     tempDiv.style.position = 'absolute';
@@ -277,7 +277,7 @@ export default function AssignmentOutput() {
       </div>
     `;
     document.body.appendChild(tempDiv);
-    
+
     await downloadAsPDF('temp-answerkey', `Answer_Key_${assignment?.title || 'Assignment'}`);
     document.body.removeChild(tempDiv);
   };
@@ -330,7 +330,7 @@ export default function AssignmentOutput() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      
+
       {/* Top Bar */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
         <div className="px-6 py-3 flex items-center justify-between">
@@ -338,7 +338,7 @@ export default function AssignmentOutput() {
             <ArrowLeft size={18} />
             <span className="text-sm font-medium">Back to Dashboard</span>
           </Link>
-          
+
           <div className="flex items-center gap-3">
             <button
               onClick={handleCopyLink}
@@ -352,7 +352,7 @@ export default function AssignmentOutput() {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
-        
+
         {/* AI Banner */}
         <div
           className="rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
@@ -366,7 +366,7 @@ export default function AssignmentOutput() {
 
         {/* Question Paper Container */}
         <div ref={printRef} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          
+
           {/* School Header */}
           <div className="px-10 pt-10 pb-6 text-center border-b border-gray-100">
             <h1 className="text-2xl font-bold text-gray-900">Delhi Public School, Sector-4, Bokaro</h1>
@@ -393,7 +393,7 @@ export default function AssignmentOutput() {
                 type="text"
                 value={studentInfo.name}
                 onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
-                placeholder="________________"
+                placeholder=""
                 className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
@@ -403,7 +403,7 @@ export default function AssignmentOutput() {
                 type="text"
                 value={studentInfo.rollNumber}
                 onChange={(e) => setStudentInfo({ ...studentInfo, rollNumber: e.target.value })}
-                placeholder="____________"
+                placeholder=""
                 className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
@@ -413,7 +413,7 @@ export default function AssignmentOutput() {
                 type="text"
                 value={studentInfo.section}
                 onChange={(e) => setStudentInfo({ ...studentInfo, section: e.target.value })}
-                placeholder="________"
+                placeholder=""
                 className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
@@ -500,7 +500,7 @@ export default function AssignmentOutput() {
             )}
           </div>
         )}
-        
+
         {/* Footer Note */}
         <div className="mt-6 text-center text-xs text-gray-400">
           <p>Generated by VedaAI - AI-Powered Assessment Platform</p>
@@ -513,22 +513,36 @@ export default function AssignmentOutput() {
             <ChevronLeft size={14} />
             Back to Dashboard
           </Link>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/create')}
-              className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <RefreshCw size={14} />
-              Regenerate
-            </button>
-            <button
-              onClick={() => printPaper(printRef.current)}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-              style={{ background: '#111' }}
-            >
-              <Download size={14} />
-              Download PDF
-            </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6">
+            <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5">
+              <ChevronLeft size={14} />
+              Back to Dashboard
+            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push('/create')}
+                className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw size={14} />
+                Regenerate
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
+                style={{ background: '#111' }}
+              >
+                <Download size={14} />
+                Download Paper
+              </button>
+              <button
+                onClick={handleDownloadAnswerKey}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
+              >
+                <Award size={14} />
+                Download Answer Key
+              </button>
+            </div>
           </div>
         </div>
       </div>

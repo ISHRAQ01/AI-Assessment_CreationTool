@@ -250,9 +250,9 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {[
                   { label: 'Total', value: stats.total, color: 'from-blue-500 to-blue-600', icon: Activity },
-                  { label: 'Completed', value: stats.completed, color: 'from-emerald-500 to-teal-600', icon: CheckCircle },
-                  { label: 'Generating', value: stats.generating, color: 'from-amber-500 to-orange-600', icon: Zap },
-                  { label: 'Draft', value: stats.draft, color: 'from-slate-500 to-slate-600', icon: FileText },
+                  { label: 'Completed', value: stats.completed, color: 'from-blue-500 to-blue-600', icon: CheckCircle },
+                  { label: 'Generating', value: stats.generating, color: 'from-blue-500 to-blue-600', icon: Zap },
+                  { label: 'Draft', value: stats.draft, color:'from-blue-500 to-blue-600', icon: FileText },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white rounded-xl p-4 border shadow-sm hover:shadow-md transition">
                     <div className="flex items-center justify-between">

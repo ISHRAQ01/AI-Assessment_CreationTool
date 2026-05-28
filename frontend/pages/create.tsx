@@ -26,23 +26,7 @@ const questionTypeOptions = [
   'More Feature Coming [Thank You For Using VedaAi'
 ];
 
-// Subject options
-const subjectOptions = [
-  'Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology',
-  'English', 'Hindi', 'Sanskrit', 'History', 'Geography',
-  'Political Science', 'Economics', 'Computer Science', 'Physical Education',
-  'Art', 'Music', 'Other'
-];
-
-// Class options
-const classOptions = [
-  '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th',
-  '11th', '12th', 'Other'
-];
-
-// Time allowed options (in minutes)
-const timeAllowedOptions = [15, 30, 45, 60, 90, 120, 180];
-// Stepper Component with manual input support
+// Stepper Component with manual input support - Enhanced
 function Stepper({ value, onChange, min = 1, max = 99 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) {
   const [inputValue, setInputValue] = useState(value.toString());
 
@@ -70,27 +54,27 @@ function Stepper({ value, onChange, min = 1, max = 99 }: { value: number; onChan
   };
 
   return (
-    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-1 py-0.5">
+    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
       <button
         type="button"
         onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors text-gray-600"
+        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors text-gray-600"
       >
-        <Minus size={12} />
+        <Minus size={14} />
       </button>
       <input
         type="text"
         value={inputValue}
         onChange={handleInputChange}
         onBlur={handleBlur}
-        className="w-8 text-center text-sm font-semibold text-gray-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-orange-400 rounded"
+        className="w-12 text-center text-sm font-semibold text-gray-800 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 py-1.5"
       />
       <button
         type="button"
         onClick={() => onChange(Math.min(max, value + 1))}
-        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors text-gray-600"
+        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors text-gray-600"
       >
-        <Plus size={12} />
+        <Plus size={14} />
       </button>
     </div>
   );
@@ -104,8 +88,8 @@ export default function CreateAssignment() {
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: 'Select Subject',
-    className: 'Select Class/Grade',
+    subject: '',
+    className: '',
     dueDate: '',
     timeAllowed: 0,
     questionTypes: [] as QuestionType[],
