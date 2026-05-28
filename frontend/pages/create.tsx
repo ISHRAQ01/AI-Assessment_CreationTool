@@ -399,7 +399,6 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
             </div>
             <div className="hidden sm:flex flex-col items-start">
               <span className="text-xs font-semibold text-gray-800 leading-tight">John Doe</span>
-              <span className="text-[10px] text-gray-400 leading-tight">Administrator</span>
             </div>
             <svg
               width="12"
@@ -500,7 +499,6 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 <p className="text-xs text-gray-500 truncate">Bokaro Steel City</p>
                 <div className="flex items-center gap-1 mt-0.5">
                   <div className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-                  <span className="text-[10px] text-gray-400">Premium Institution</span>
                 </div>
               </div>
             </div>

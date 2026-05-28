@@ -17,26 +17,26 @@ function StatusBadge({ status }: { status: string }) {
       icon: CheckCircle,
       label: 'Completed',
       class: 'bg-green-50', text: 'text-green-700',
-      dot: 'bg-emerald-500'
+      dot: 'bg-green-500'
     },
     generating: {
       icon: Loader2,
       label: 'Generating',
       class: 'bg-green-50', text: 'text-green-700',
-      dot: 'bg-amber-500'
+      dot: 'bg-green-500'
     },
     failed: {
       icon: CheckCircle,
       label: 'Failed',
       class: 'bg-green-50', text: 'text-green-700', 
-      dot: 'bg-rose-500'
+      dot: 'bg-green-500'
     },
     draft: {
       icon: CheckCircle,
       label: 'Draft',
       class: 'bg-green-50', text: 'text-green-700', 
       dot: 'bg-slate-400'
-    },
+    }
   };
   const { icon: Icon, label, class: className, dot } = config[status] || config.draft;
   return (
