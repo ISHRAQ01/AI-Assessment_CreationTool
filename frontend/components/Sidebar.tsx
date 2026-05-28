@@ -95,7 +95,7 @@ export default function Sidebar({
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <img 
-            src="/avatar.png" 
+            src="/icon.png" 
             alt="VedaAI Logo" 
             className="rounded-full object-cover"
             style={{ width: '40px', height: '40px' }}
@@ -190,7 +190,7 @@ export default function Sidebar({
 
         <div className="mt-3 mx-1 p-3 bg-gray-50 rounded-xl flex items-center gap-3">
           <img 
-            src="/profile.png" 
+            src="/avatar.png" 
             alt="School" 
             className="w-9 h-9 rounded-full object-cover flex-shrink-0"
           />
