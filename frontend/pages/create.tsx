@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Link from 'next/link';
-import { 
-  ArrowLeft, Plus, Trash2, Calendar, Clock, FileText, 
+import {
+  ArrowLeft, Plus, Trash2, Calendar, Clock, FileText,
   BookOpen, Sparkles, CheckCircle, AlertCircle, Loader2,
   HelpCircle, ChevronRight, Zap, Layers, Target, Upload, X, File,
   Home, Users, Wrench, Library, Settings
@@ -30,14 +30,14 @@ export default function CreateAssignment() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
-  title: '',
-  subject: 'Science',
-  className: '8th',
-  dueDate: '',
-  timeAllowed: 45,
-  questionTypes: [] as QuestionType[], 
-  additionalInstructions: '',
-});
+    title: '',
+    subject: 'Science',
+    className: '8th',
+    dueDate: '',
+    timeAllowed: 45,
+    questionTypes: [] as QuestionType[],
+    additionalInstructions: '',
+  });
 
 
 
@@ -73,7 +73,7 @@ export default function CreateAssignment() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       handleFileRead(files[0]);
@@ -109,10 +109,10 @@ export default function CreateAssignment() {
   // FIXED: File content is stored separately, NOT added to additionalInstructions display
   const handleFileRead = async (file: File) => {
     setUploadedFile(file);
-    
+
     const fileName = file.name.replace(/\.[^/.]+$/, '');
     const extractedTitle = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-    
+
     let extractedSubject = formData.subject;
     const subjectKeywords = ['Math', 'Science', 'English', 'History', 'Geography', 'Physics', 'Chemistry', 'Biology', 'Hindi', 'Sanskrit'];
     for (const keyword of subjectKeywords) {
@@ -121,16 +121,16 @@ export default function CreateAssignment() {
         break;
       }
     }
-    
+
     let content = '';
-    
+
     if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
       // For TXT files
       const reader = new FileReader();
       reader.onload = (event) => {
         content = event.target?.result as string;
         setFileContent(content); // Store separately, NOT in additionalInstructions
-        
+
         // Update title and subject only, NOT additionalInstructions
         setFormData(prev => ({
           ...prev,
@@ -140,19 +140,19 @@ export default function CreateAssignment() {
         }));
       };
       reader.readAsText(file);
-    } 
+    }
     else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
       const extractedText = await extractPdfTextSimple(file);
       content = extractedText;
       setFileContent(content); // Store separately, NOT in additionalInstructions
-      
+
       setFormData(prev => ({
         ...prev,
         title: prev.title || extractedTitle,
         subject: extractedSubject,
         // additionalInstructions remains unchanged
       }));
-      
+
       alert(`PDF "${fileName}" loaded! Content extracted for AI.`);
     }
     else {
@@ -185,25 +185,25 @@ export default function CreateAssignment() {
   // FIXED: File content is added ONLY during submission, not displayed in textarea
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title || !formData.dueDate) {
       alert('Please fill in all required fields');
       return;
     }
-    
+
     if (totalQuestions === 0) {
       alert('Please add at least one question type');
       return;
     }
-    
-    setLoading(true);
-    
-// Build final instructions for AI - file content added here, NOT in display
-let finalInstructions = formData.additionalInstructions;
 
-// Add file content ONLY for AI submission (not shown in UI)
-if (uploadedFile && fileContent && fileContent.length > 100) {
-  finalInstructions = `IMPORTANT: You are an expert exam question generator. Generate questions based ONLY on the following content from "${uploadedFile.name}".
+    setLoading(true);
+
+    // Build final instructions for AI - file content added here, NOT in display
+    let finalInstructions = formData.additionalInstructions;
+
+    // Add file content ONLY for AI submission (not shown in UI)
+    if (uploadedFile && fileContent && fileContent.length > 100) {
+      finalInstructions = `IMPORTANT: You are an expert exam question generator. Generate questions based ONLY on the following content from "${uploadedFile.name}".
 
 --- FILE CONTENT START ---
 ${fileContent.substring(0, 4000)}
@@ -216,13 +216,13 @@ STRICT RULES:
 4. Class/Grade: ${formData.className}
 
 ${formData.additionalInstructions ? `\nAdditional user instructions: ${formData.additionalInstructions}` : ''}`;
-}
+    }
 
-// Check if MCQ is selected
-const hasMCQ = formData.questionTypes.some(qt => qt.type === 'Multiple Choice Questions');
+    // Check if MCQ is selected
+    const hasMCQ = formData.questionTypes.some(qt => qt.type === 'Multiple Choice Questions');
 
-if (hasMCQ) {
-  finalInstructions += `
+    if (hasMCQ) {
+      finalInstructions += `
 
 ╔══════════════════════════════════════════════════════════════╗
 ║           IMPORTANT: MULTIPLE CHOICE QUESTION FORMAT         ║
@@ -250,53 +250,53 @@ Each MCQ MUST have exactly 4 options (A, B, C, D).
 The correct answer MUST be indicated as [Answer: X] at the end.
 
 Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questions')?.numberOfQuestions || 5} Multiple Choice Questions based on the file content.`;
-}
+    }
 
-// Add instructions for other question types
-const hasShort = formData.questionTypes.some(qt => qt.type === 'Short Questions');
-if (hasShort) {
-  finalInstructions += `\n\nFor Short Questions, generate clear, concise questions that require 2-3 sentence answers.`;
-}
+    // Add instructions for other question types
+    const hasShort = formData.questionTypes.some(qt => qt.type === 'Short Questions');
+    if (hasShort) {
+      finalInstructions += `\n\nFor Short Questions, generate clear, concise questions that require 2-3 sentence answers.`;
+    }
 
-const hasDiagram = formData.questionTypes.some(qt => qt.type === 'Diagram/Graph-Based Questions');
-if (hasDiagram) {
-  finalInstructions += `\n\nFor Diagram/Graph-Based Questions, describe what diagram or graph students need to draw or interpret.`;
-}
+    const hasDiagram = formData.questionTypes.some(qt => qt.type === 'Diagram/Graph-Based Questions');
+    if (hasDiagram) {
+      finalInstructions += `\n\nFor Diagram/Graph-Based Questions, describe what diagram or graph students need to draw or interpret.`;
+    }
 
-const hasNumerical = formData.questionTypes.some(qt => qt.type === 'Numerical Problems');
-if (hasNumerical) {
-  finalInstructions += `\n\nFor Numerical Problems, provide clear problem statements with necessary data.`;
-}
+    const hasNumerical = formData.questionTypes.some(qt => qt.type === 'Numerical Problems');
+    if (hasNumerical) {
+      finalInstructions += `\n\nFor Numerical Problems, provide clear problem statements with necessary data.`;
+    }
 
-// Add total counts
-finalInstructions += `\n\nTotal Questions to Generate: ${totalQuestions} (${formData.questionTypes.map(qt => `${qt.numberOfQuestions} ${qt.type}`).join(', ')})`;
-finalInstructions += `\nTotal Marks: ${totalMarks}`;
-    
+    // Add total counts
+    finalInstructions += `\n\nTotal Questions to Generate: ${totalQuestions} (${formData.questionTypes.map(qt => `${qt.numberOfQuestions} ${qt.type}`).join(', ')})`;
+    finalInstructions += `\nTotal Marks: ${totalMarks}`;
+
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/assignments`,  {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/assignments`, {
         title: formData.title,
         description: `${formData.subject} - ${formData.className}`,
         dueDate: formData.dueDate,
         questionTypes: formData.questionTypes,
         additionalInstructions: finalInstructions,
       });
-      
+
       if (response.data.success) {
         const assignmentId = response.data.data._id;
-        
-       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/generate`, {
-  assignmentId,
-  formData: {
-    title: formData.title, 
-    subject: formData.subject,
-    className: formData.className,
-    timeAllowed: formData.timeAllowed,
-    totalMarks,
-    questionTypes: formData.questionTypes,
-    additionalInstructions: finalInstructions,
-  }
-});
-        
+
+        await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/generate`, {
+          assignmentId,
+          formData: {
+            title: formData.title,
+            subject: formData.subject,
+            className: formData.className,
+            timeAllowed: formData.timeAllowed,
+            totalMarks,
+            questionTypes: formData.questionTypes,
+            additionalInstructions: finalInstructions,
+          }
+        });
+
         router.push('/');
       }
     } catch (error) {
@@ -314,9 +314,9 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
           <ArrowLeft size={20} />
           <span className="text-sm font-medium">Assignment</span>
         </Link>
-        
+
         <div className="flex items-center gap-6">
-          
+
           <div className="flex items-center gap-2 border border-gray-200 rounded-full py-1 px-3 bg-gray-50">
             <img src="/avatar.png" alt="Profile" className="w-7 h-7 rounded-full object-cover" />
             <span className="text-sm font-semibold text-gray-700">John Doe</span>
@@ -325,12 +325,23 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
       </header>
 
       <div className="max-w-[1400px] mx-auto px-8 py-8 flex gap-8">
-        
+
         <aside className="w-64 flex-shrink-0 flex flex-col justify-between h-[calc(100vh-120px)] sticky top-20">
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 px-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-base">V</div>
-              <span className="text-xl font-bold text-gray-900 tracking-tight">VedaAI</span>
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl p-5 shadow-lg">
+            {/* Logo Section - Enhanced */}
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-100">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl blur-md opacity-60" />
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-xl">V</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  VedaAI
+                </span>
+                <p className="text-[10px] text-gray-400 mt-0.5">AI Assessment Platform</p>
+              </div>
             </div>
 
             <Link href="/create" className="w-full bg-[#2D2E32] text-white rounded-full py-2.5 px-4 flex items-center justify-center gap-2 text-sm font-medium shadow-sm">
@@ -349,9 +360,8 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    item.active ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${item.active ? 'bg-orange-50 text-orange-600' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <item.icon size={18} className={item.active ? 'text-orange-600' : 'text-gray-400'} />
@@ -368,7 +378,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
               <span>Settings</span>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-              <img src="/avataar.png" alt="School" className="w-10 h-10 rounded-lg object-cover" />
+              <img src="/avatar.png" alt="School" className="w-10 h-10 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-800 truncate">Delhi Public School</p>
                 <p className="text-[11px] text-gray-400 truncate">Bokaro Steel City</p>
@@ -385,7 +395,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
           </div>
 
           <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
-            
+
             <div>
               <h2 className="text-lg font-semibold text-gray-800">Assignment Details</h2>
               <p className="text-xs text-gray-400">Basic information about your assignment</p>
@@ -452,9 +462,8 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
 
             {/* File Upload Area - No longer shows content in Additional Info */}
             <div
-              className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${
-                dragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 bg-gray-50'
-              }`}
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition cursor-pointer ${dragActive ? 'border-orange-500 bg-orange-50' : 'border-gray-300 bg-gray-50'
+                }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -464,7 +473,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
               <Upload size={32} className="mx-auto text-gray-400 mb-3" />
               <p className="text-sm text-gray-600">Choose a file or drag & drop it here</p>
               <p className="text-xs text-gray-400 mt-1">TXT files recommended for best results</p>
-              
+
               <input
                 id="fileInput"
                 type="file"
@@ -472,11 +481,11 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              
+
               <button type="button" className="mt-4 bg-white border border-gray-300 text-gray-700 text-sm font-medium px-5 py-2 rounded-lg hover:bg-gray-50 transition">
                 Browse Files
               </button>
-              
+
               {uploadedFile && (
                 <div className="mt-4 flex items-center justify-between bg-white rounded-lg p-3 border max-w-md mx-auto">
                   <div className="flex items-center gap-2">
@@ -484,7 +493,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                     <div className="text-left">
                       <p className="text-sm text-gray-700 truncate max-w-[200px]">{uploadedFile.name}</p>
                       <p className="text-xs text-green-600">
-                        {fileContent && fileContent.length > 100 
+                        {fileContent && fileContent.length > 100
                           ? `✓ ${(fileContent.length / 1000).toFixed(1)}KB content extracted (will be used for AI)`
                           : `✓ File ready`}
                       </p>
@@ -495,7 +504,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                   </button>
                 </div>
               )}
-              
+
               <div className="mt-4 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                 <p className="font-medium">📌 How it works:</p>
                 <ul className="list-disc list-inside mt-1">
@@ -529,7 +538,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                         ))}
                       </select>
                     </div>
-                    
+
                     <div className="col-span-3">
                       <input
                         type="number"
@@ -539,7 +548,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
-                    
+
                     <div className="col-span-3">
                       <input
                         type="number"
@@ -549,7 +558,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
                       />
                     </div>
-                    
+
                     <div className="col-span-1 text-center">
                       {formData.questionTypes.length > 1 && (
                         <button type="button" onClick={() => removeQuestionType(index)} className="text-gray-400 hover:text-red-500">
