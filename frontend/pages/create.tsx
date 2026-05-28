@@ -37,7 +37,7 @@ function Stepper({ value, onChange, min = 1, max = 99 }: { value: number; onChan
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputValue(val);
-    
+
     const num = parseInt(val);
     if (!isNaN(num) && num >= min && num <= max) {
       onChange(num);
@@ -473,67 +473,21 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <select
+                <input
+                  type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
-                >
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Biology">Biology</option>
-                  <option value="English">English</option>
-                  <option value="Hindi">Hindi</option>
-                  <option value="Sanskrit">Sanskrit</option>
-                  <option value="History">History</option>
-                  <option value="Geography">Geography</option>
-                  <option value="Political Science">Political Science</option>
-                  <option value="Economics">Economics</option>
-                  <option value="Computer Science">Computer Science</option>
-                  <option value="Physical Education">Physical Education</option>
-                  <option value="Art">Art</option>
-                  <option value="Music">Music</option>
-                  <option value="Other">Other (Please specify)</option>
-                </select>
-                {formData.subject === 'Other (Please specify)' && (
-                  <input
-                    type="text"
-                    placeholder="Enter subject name"
-                    className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  />
-                )}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Class/Grade</label>
-                <select
+                <input
+                  type="text"
                   value={formData.className}
                   onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
-                >
-                  <option value="1st">1st</option>
-                  <option value="2nd">2nd</option>
-                  <option value="3rd">3rd</option>
-                  <option value="4th">4th</option>
-                  <option value="5th">5th</option>
-                  <option value="6th">6th</option>
-                  <option value="7th">7th</option>
-                  <option value="8th">8th</option>
-                  <option value="9th">9th</option>
-                  <option value="10th">10th</option>
-                  <option value="11th">11th</option>
-                  <option value="12th">12th</option>
-                  <option value="Other">Other</option>
-                </select>
-                {formData.className === 'Other' && (
-                  <input
-                    type="text"
-                    placeholder="Enter class name"
-                    className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-                  />
-                )}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
               </div>
             </div>
 
@@ -554,28 +508,12 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
                   <Clock size={14} /> Time Allowed (minutes)
                 </label>
-                <select
+                <input
+                  type="number"
                   value={formData.timeAllowed}
                   onChange={(e) => setFormData({ ...formData, timeAllowed: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 bg-white"
-                >
-                  <option value={15}>15 minutes</option>
-                  <option value={30}>30 minutes</option>
-                  <option value={45}>45 minutes</option>
-                  <option value={60}>60 minutes (1 hour)</option>
-                  <option value={90}>90 minutes (1.5 hours)</option>
-                  <option value={120}>120 minutes (2 hours)</option>
-                  <option value={180}>180 minutes (3 hours)</option>
-                  <option value={0}>Custom</option>
-                </select>
-                {formData.timeAllowed === 0 && (
-                  <input
-                    type="number"
-                    placeholder="Enter minutes"
-                    className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-                    onChange={(e) => setFormData({ ...formData, timeAllowed: parseInt(e.target.value) })}
-                  />
-                )}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                />
               </div>
             </div>
 
