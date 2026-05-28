@@ -316,12 +316,9 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
         </Link>
         
         <div className="flex items-center gap-6">
-          <button className="relative p-1 text-gray-500 hover:text-gray-800">
-            <img src="/icon.png" alt="Logo" className="w-8 h-8 rounded-full object-cover" />
-          </button>
           
           <div className="flex items-center gap-2 border border-gray-200 rounded-full py-1 px-3 bg-gray-50">
-            <img src="/avataat.png" alt="Profile" className="w-7 h-7 rounded-full object-cover" />
+            <img src="/avatar.png" alt="Profile" className="w-7 h-7 rounded-full object-cover" />
             <span className="text-sm font-semibold text-gray-700">John Doe</span>
           </div>
         </div>
@@ -371,7 +368,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
               <span>Settings</span>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-              <img src="/avataat.png" alt="School" className="w-10 h-10 rounded-lg object-cover" />
+              <img src="/avataar.png" alt="School" className="w-10 h-10 rounded-lg object-cover" />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-800 truncate">Delhi Public School</p>
                 <p className="text-[11px] text-gray-400 truncate">Bokaro Steel City</p>
