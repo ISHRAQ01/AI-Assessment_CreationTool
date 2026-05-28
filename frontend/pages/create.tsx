@@ -18,12 +18,8 @@ interface QuestionType {
 const questionTypeOptions = [
   'Multiple Choice Questions',
   'Short Questions',
-  'Long Answer Questions',
-  'Fill in the Blanks',
-  'Jumble Sentence / Make Sentence',
   'Diagram/Graph-Based Questions',
   'Numerical Problems',
-  'More Feature Coming [Thank You For Using VedaAi]'
 ];
 
 // Stepper Component with manual input support - Enhanced
