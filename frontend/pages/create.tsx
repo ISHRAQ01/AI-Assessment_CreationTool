@@ -273,7 +273,7 @@ finalInstructions += `\n\nTotal Questions to Generate: ${totalQuestions} (${form
 finalInstructions += `\nTotal Marks: ${totalMarks}`;
     
     try {
-      const response = await axios.post('/api/assignments', {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/assignments`,  {
         title: formData.title,
         description: `${formData.subject} - ${formData.className}`,
         dueDate: formData.dueDate,
@@ -284,7 +284,7 @@ finalInstructions += `\nTotal Marks: ${totalMarks}`;
       if (response.data.success) {
         const assignmentId = response.data.data._id;
         
-        await axios.post('/api/generate', {
+       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/generate`, {
   assignmentId,
   formData: {
     title: formData.title, 

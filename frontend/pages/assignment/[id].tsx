@@ -67,8 +67,7 @@ export default function AssignmentOutput() {
   const fetchAssignment = async () => {
     try {
       const assignmentId = Array.isArray(id) ? id[0] : id;
-      const response = await axios.get(`/api/assignments/${assignmentId}`);
-      if (response.data.success) {
+const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignmentId}`);      if (response.data.success) {
         const assignmentData = response.data.data;
         setAssignment(assignmentData);
         
@@ -89,8 +88,7 @@ export default function AssignmentOutput() {
 
   const fetchQuestionPaper = async (paperId: string) => {
     try {
-      const response = await axios.get(`/api/question-papers/${paperId}`);
-      if (response.data.success) {
+const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-papers/${paperId}`);      if (response.data.success) {
         const paper = response.data.data;
         if (paper.sections) {
           paper.sections = paper.sections.map((section: Section) => {

@@ -13,8 +13,7 @@ export function useWebSocket() {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:5000');
-    
+const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000');    
     ws.onopen = () => {
       console.log('WebSocket connected');
       setSocket(ws);
