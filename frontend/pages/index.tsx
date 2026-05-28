@@ -261,9 +261,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
           {[
             { label: 'Total', value: stats.total, color: 'from-blue-500 to-blue-600', icon: Activity, bg: 'bg-blue-50' },
-            { label: 'Completed', value: stats.completed, color: 'from-emerald-500 to-teal-600', icon: CheckCircle, bg: 'bg-emerald-50' },
-            { label: 'Generating', value: stats.generating, color: 'from-amber-500 to-orange-600', icon: Zap, bg: 'bg-amber-50' },
-            { label: 'Draft', value: stats.draft, color: 'from-slate-500 to-slate-600', icon: FileText, bg: 'bg-slate-50' },
+            { label: 'Completed', value: stats.completed, color: 'from-blue-500 to-blue-600', icon: CheckCircle, bg: 'bg-emerald-50' },
+            { label: 'Generating', value: stats.generating, color: 'from-blue-500 to-blue-600', icon: Zap, bg: 'bg-amber-50' },
+            { label: 'Draft', value: stats.draft, color: 'from-blue-500 to-blue-600', icon: FileText, bg: 'bg-slate-50' },
           ].map((stat) => (
             <div 
               key={stat.label} 
