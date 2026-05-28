@@ -3,7 +3,7 @@ import Groq from 'groq-sdk';
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-
+//Aiservice
 interface GenerateParams {
   title: string;
   subject: string;
