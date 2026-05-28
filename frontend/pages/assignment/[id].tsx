@@ -347,13 +347,6 @@ export default function AssignmentOutput() {
               {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
               {copied ? 'Copied!' : 'Copy Link'}
             </button>
-            <button
-              onClick={() => printPaper(printRef.current)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium hover:shadow-lg transition"
-            >
-              <Download size={16} />
-              Download PDF
-            </button>
           </div>
         </div>
       </header>

@@ -6,7 +6,7 @@ import {
   ArrowLeft, Plus, Trash2, Calendar, Clock, FileText,
   BookOpen, Sparkles, CheckCircle, AlertCircle, Loader2,
   HelpCircle, ChevronRight, Zap, Layers, Target, Upload, X, File,
-  Home, Users, Wrench, Library, Settings
+  Home, Users, Wrench, Library, Settings, Minus
 } from 'lucide-react';
 
 interface QuestionType {
@@ -42,6 +42,59 @@ const classOptions = [
 
 // Time allowed options (in minutes)
 const timeAllowedOptions = [15, 30, 45, 60, 90, 120, 180];
+// Stepper Component with manual input support
+function Stepper({ value, onChange, min = 1, max = 99 }: { value: number; onChange: (v: number) => void; min?: number; max?: number }) {
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  useEffect(() => {
+    setInputValue(value.toString());
+  }, [value]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputValue(val);
+    
+    const num = parseInt(val);
+    if (!isNaN(num) && num >= min && num <= max) {
+      onChange(num);
+    }
+  };
+
+  const handleBlur = () => {
+    let num = parseInt(inputValue);
+    if (isNaN(num)) num = min;
+    if (num < min) num = min;
+    if (num > max) num = max;
+    onChange(num);
+    setInputValue(num.toString());
+  };
+
+  return (
+    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-1 py-0.5">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors text-gray-600"
+      >
+        <Minus size={12} />
+      </button>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleBlur}
+        className="w-8 text-center text-sm font-semibold text-gray-800 bg-transparent focus:outline-none focus:ring-1 focus:ring-orange-400 rounded"
+      />
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-gray-200 transition-colors text-gray-600"
+      >
+        <Plus size={12} />
+      </button>
+    </div>
+  );
+}
 
 export default function CreateAssignment() {
   const router = useRouter();
@@ -51,10 +104,10 @@ export default function CreateAssignment() {
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: 'Science',
-    className: '8th',
+    subject: 'Select Subject',
+    className: 'Select Class/Grade',
     dueDate: '',
-    timeAllowed: 45,
+    timeAllowed: 0,
     questionTypes: [] as QuestionType[],
     additionalInstructions: '',
   });
@@ -622,22 +675,16 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                     </div>
 
                     <div className="col-span-3">
-                      <input
-                        type="number"
-                        min="1"
+                      <Stepper
                         value={qt.numberOfQuestions}
-                        onChange={(e) => updateQuestionType(index, 'numberOfQuestions', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
+                        onChange={(v) => updateQuestionType(index, 'numberOfQuestions', v)}
                       />
                     </div>
 
                     <div className="col-span-3">
-                      <input
-                        type="number"
-                        min="1"
+                      <Stepper
                         value={qt.marksPerQuestion}
-                        onChange={(e) => updateQuestionType(index, 'marksPerQuestion', parseInt(e.target.value) || 1)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-orange-500"
+                        onChange={(v) => updateQuestionType(index, 'marksPerQuestion', v)}
                       />
                     </div>
 
