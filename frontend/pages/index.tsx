@@ -267,6 +267,8 @@ export default function Dashboard() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
   useEffect(() => { fetchAssignments(); }, []);
 
   useEffect(() => {
@@ -283,7 +285,7 @@ export default function Dashboard() {
   const fetchAssignments = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get('/api/assignments');
+      const res = await axios.get(`${API_URL}/assignments`);
       if (res.data.success) setAssignments(res.data.data);
     } catch (e) { 
       console.error('Failed to fetch assignments:', e); 
@@ -295,7 +297,7 @@ export default function Dashboard() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this assignment? This action cannot be undone.')) return;
     try {
-      await axios.delete(`/api/assignments/${id}`);
+      await axios.delete(`${API_URL}/assignments/${id}`);
       useAssignmentStore.getState().deleteAssignment(id);
     } catch (e) { 
       console.error('Failed to delete assignment:', e); 
