@@ -76,7 +76,6 @@ export default function TopBar({ backHref, backLabel, breadcrumb }: TopBarProps)
           {/* User Info - Hidden on mobile */}
           <div className="hidden sm:block">
             <p className="text-sm font-semibold text-gray-700 leading-tight">John Doe</p>
-            <p className="text-xs text-gray-400 leading-tight">Administrator</p>
           </div>
           
           {/* Chevron - Hidden on mobile */}

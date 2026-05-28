@@ -16,25 +16,25 @@ function StatusBadge({ status }: { status: string }) {
     completed: {
       icon: CheckCircle,
       label: 'Completed',
-      class: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+      class: 'bg-green-50', text: 'text-green-700',
       dot: 'bg-emerald-500'
     },
     generating: {
       icon: Loader2,
       label: 'Generating',
-      class: 'bg-amber-50 text-amber-700 border border-amber-200',
+      class: 'bg-green-50', text: 'text-green-700',
       dot: 'bg-amber-500'
     },
     failed: {
       icon: CheckCircle,
       label: 'Failed',
-      class: 'bg-rose-50 text-rose-700 border border-rose-200',
+      class: 'bg-green-50', text: 'text-green-700', 
       dot: 'bg-rose-500'
     },
     draft: {
       icon: CheckCircle,
       label: 'Draft',
-      class: 'bg-slate-50 text-slate-600 border border-slate-200',
+      class: 'bg-green-50', text: 'text-green-700', 
       dot: 'bg-slate-400'
     },
   };
@@ -101,8 +101,8 @@ function AssignmentCard({ assignment, onDelete, viewMode }: any) {
         <Link
           href={assignment.status === 'completed' ? `/assignment/${assignment._id}` : '#'}
           className={`flex-1 text-sm font-semibold leading-snug ${assignment.status === 'completed'
-              ? 'text-gray-800 hover:text-orange-600 group-hover:text-orange-600'
-              : 'text-gray-600'
+            ? 'text-gray-800 hover:text-orange-600 group-hover:text-orange-600'
+            : 'text-gray-600'
             } transition-colors line-clamp-2`}
         >
           {assignment.title}
@@ -323,8 +323,8 @@ export default function Dashboard() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid'
-                        ? 'bg-white shadow-md text-orange-500'
-                        : 'text-gray-400 hover:text-gray-600'
+                      ? 'bg-white shadow-md text-orange-500'
+                      : 'text-gray-400 hover:text-gray-600'
                       }`}
                   >
                     <Grid3x3 size={16} />
@@ -332,8 +332,8 @@ export default function Dashboard() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list'
-                        ? 'bg-white shadow-md text-orange-500'
-                        : 'text-gray-400 hover:text-gray-600'
+                      ? 'bg-white shadow-md text-orange-500'
+                      : 'text-gray-400 hover:text-gray-600'
                       }`}
                   >
                     <FileText size={16} />

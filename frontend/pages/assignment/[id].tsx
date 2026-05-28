@@ -46,8 +46,8 @@ interface Assignment {
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const map: Record<string, { bg: string; text: string; dot: string }> = {
     Easy: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-    Moderate: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-    Challenging: {bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500'},
+    Moderate: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500'  },
+    Challenging: {bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
   };
   const style = map[difficulty] || map.Easy;
   return (

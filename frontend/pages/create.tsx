@@ -427,7 +427,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-2xl">V</span>
+                  <span className="text-black font-bold text-2xl">V</span>
                 </div>
               </div>
               <div>
@@ -436,7 +436,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 </span>
                 <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
                   <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                  AI Assessment Platform
+                  AI Assessment Creator
                 </p>
               </div>
             </div>
@@ -792,7 +792,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-md">
-                  <Sparkles size={16} className="text-white" />
+                  <Sparkles size={16} className="text-black" />
                 </div>
                 <span className="text-base font-bold text-orange-700">AI-Powered Generation</span>
               </div>
