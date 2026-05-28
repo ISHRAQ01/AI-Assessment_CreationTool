@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { 
   ArrowLeft, Download, Printer, Share2, Copy, Check, 
   FileText, Clock, Calendar, BookOpen, Award, Sparkles,
-  Loader2, Home, Users, Wrench, Library, Settings, ChevronDown
+  Loader2, Home, Users, Wrench, Library, Settings, ChevronDown,
+  ChevronLeft, RefreshCw
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -41,6 +42,52 @@ interface Assignment {
   generatedPaperId?: string;
 }
 
+// Difficulty Badge Component
+function DifficultyBadge({ difficulty }: { difficulty: string }) {
+  const map: Record<string, { bg: string; text: string; dot: string }> = {
+    Easy: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+    Moderate: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
+    Challenging: { bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-500' },
+  };
+  const style = map[difficulty] || map.Easy;
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+      {difficulty}
+    </span>
+  );
+}
+
+// Print utility
+function printPaper(el?: HTMLElement | null) {
+  if (!el) return window.print();
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) return window.print();
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('input, textarea').forEach((node) => {
+    const n = node as HTMLInputElement | HTMLTextAreaElement;
+    const span = document.createElement('span');
+    span.textContent = n.value || n.placeholder || '';
+    node.parentNode?.replaceChild(span, node);
+  });
+  const headHtml = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map((n) => n.outerHTML)
+    .join('\n');
+  const overrideStyles = `<style>
+    @media print {
+      body * { visibility: visible !important; }
+      aside, header, button, a { display: none !important; }
+    }
+    body { background: #fff; color: #000; }
+  </style>`;
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8">${headHtml}\n${overrideStyles}
+    <style>@page{size:auto;margin:20mm} body{background:#fff}</style></head><body>
+    ${clone.outerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); win.close(); } catch (e) { console.error('Print failed', e); } }, 700);
+}
+
 export default function AssignmentOutput() {
   const router = useRouter();
   const { id } = router.query;
@@ -59,15 +106,14 @@ export default function AssignmentOutput() {
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (id) {
-      fetchAssignment();
-    }
+    if (id) fetchAssignment();
   }, [id]);
 
   const fetchAssignment = async () => {
     try {
       const assignmentId = Array.isArray(id) ? id[0] : id;
-const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignmentId}`);      if (response.data.success) {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/assignments/${assignmentId}`);
+      if (response.data.success) {
         const assignmentData = response.data.data;
         setAssignment(assignmentData);
         
@@ -88,7 +134,8 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/assignments
 
   const fetchQuestionPaper = async (paperId: string) => {
     try {
-const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-papers/${paperId}`);      if (response.data.success) {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-papers/${paperId}`);
+      if (response.data.success) {
         const paper = response.data.data;
         if (paper.sections) {
           paper.sections = paper.sections.map((section: Section) => {
@@ -181,14 +228,12 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
   const handleDownloadPDF = async () => {
     if (!printRef.current) return;
     
-    // Create a temporary clone without answer key
     const clone = printRef.current.cloneNode(true) as HTMLElement;
     const answerKeyDiv = clone.querySelector('.answer-key-section');
     if (answerKeyDiv) {
       answerKeyDiv.remove();
     }
     
-    // Add temporary ID to the clone
     const tempId = 'temp-pdf-content';
     clone.id = tempId;
     clone.style.position = 'absolute';
@@ -197,15 +242,12 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
     document.body.appendChild(clone);
     
     await downloadAsPDF(tempId, assignment?.title || 'Question_Paper');
-    
-    // Remove the temporary element
     document.body.removeChild(clone);
   };
 
   const handleDownloadAnswerKey = async () => {
     if (!questionPaper?.answerKey) return;
     
-    // Create answer key HTML
     const tempDiv = document.createElement('div');
     tempDiv.id = 'temp-answerkey';
     tempDiv.style.position = 'absolute';
@@ -215,7 +257,7 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
       <div style="padding: 40px; font-family: Arial, sans-serif; max-width: 800px;">
         <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #ddd; padding-bottom: 20px;">
           <h1 style="font-size: 24px; margin-bottom: 10px;">Delhi Public School, Sector-4, Bokaro</h1>
-          <p style="font-size: 14px; color: #666;">Affiliated to CBSE | Excellence in Education</p>
+          <p style="font-size: 14px; color: #666;">Bokaro Steel City</p>
           <h2 style="font-size: 18px; margin: 20px 0 10px;">ANSWER KEY</h2>
           <div style="display: flex; justify-content: space-between; margin: 10px 0;">
             <span><strong>Assignment:</strong> ${assignment?.title}</span>
@@ -237,12 +279,7 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
     document.body.appendChild(tempDiv);
     
     await downloadAsPDF('temp-answerkey', `Answer_Key_${assignment?.title || 'Assignment'}`);
-    
     document.body.removeChild(tempDiv);
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const handleCopyLink = () => {
@@ -251,21 +288,12 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800';
-      case 'Moderate': return 'bg-yellow-100 text-yellow-800';
-      case 'Challenging': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center">
-          <Loader2 size={40} className="animate-spin text-orange-500 mx-auto mb-4" />
-          <p className="text-gray-500">Loading your question paper...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-orange-400 border-t-transparent animate-spin" />
+          <p className="text-sm text-gray-400">Loading question paper…</p>
         </div>
       </div>
     );
@@ -275,23 +303,22 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 mb-8 transition">
             <ArrowLeft size={18} />
             Back to Dashboard
           </Link>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Clock size={32} className="text-yellow-600" />
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <RefreshCw size={24} className="text-amber-500 animate-spin" />
             </div>
-            <h2 className="text-xl font-semibold text-yellow-800 mb-2">Assignment Still Generating</h2>
-            <p className="text-yellow-700">
-              Your question paper is being generated by AI. This may take a few seconds.
-              <br />
-              <span className="text-sm">Status: {assignment?.status || 'Processing'}</span>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Generating your paper…</h2>
+            <p className="text-sm text-gray-500 mb-1">AI is crafting your question paper.</p>
+            <p className="text-xs text-gray-400 mb-6">
+              Status: <span className="font-medium text-amber-600">{assignment?.status || 'Processing'}</span>
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
+              className="px-6 py-2.5 rounded-full text-sm font-semibold text-white bg-gray-900 hover:bg-gray-800 transition"
             >
               Refresh
             </button>
@@ -321,15 +348,8 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
               {copied ? 'Copied!' : 'Copy Link'}
             </button>
             <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
-            >
-              <Printer size={16} />
-              Print
-            </button>
-            <button
-              onClick={handleDownloadPDF}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-black rounded-xl text-sm font-medium hover:shadow-lg transition"
+              onClick={() => printPaper(printRef.current)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl text-sm font-medium hover:shadow-lg transition"
             >
               <Download size={16} />
               Download PDF
@@ -340,102 +360,99 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         
+        {/* AI Banner */}
+        <div
+          className="rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}
+        >
+          <p className="text-white text-sm leading-relaxed font-medium flex-1">
+            Certainly, {studentInfo.name || 'Teacher'}! Here are customized Question Papers for your{' '}
+            {questionPaper.subject} – Class {questionPaper.className} students.
+          </p>
+        </div>
+
         {/* Question Paper Container */}
         <div ref={printRef} className="bg-white rounded-2xl shadow-xl overflow-hidden">
           
           {/* School Header */}
-          <div className="border-b border-gray-200 p-8 text-center bg-gradient-to-r from-orange-50 to-amber-50">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Delhi Public School, Sector-4, Bokaro</h1>
-            <div className="mt-6 grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <div className="text-left">
-                <p className="text-sm text-gray-500">Subject</p>
-                <p className="font-semibold text-gray-800">{questionPaper.subject}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Class</p>
-                <p className="font-semibold text-gray-800">{questionPaper.className}</p>
-              </div>
-              <div className="text-left">
-                <p className="text-sm text-gray-500">Time Allowed</p>
-                <p className="font-semibold text-gray-800">{questionPaper.timeAllowed} minutes</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Maximum Marks</p>
-                <p className="font-semibold text-gray-800">{questionPaper.maxMarks}</p>
-              </div>
-            </div>
+          <div className="px-10 pt-10 pb-6 text-center border-b border-gray-100">
+            <h1 className="text-2xl font-bold text-gray-900">Delhi Public School, Sector-4, Bokaro</h1>
+            <p className="mt-1.5 text-base font-semibold text-gray-700">Subject: {questionPaper.subject}</p>
+            <p className="text-base font-semibold text-gray-700">Class: {questionPaper.className}</p>
+          </div>
+
+          {/* Meta Row */}
+          <div className="flex items-center justify-between px-10 py-4 border-b border-gray-100 bg-gray-50/50">
+            <span className="text-sm font-semibold text-gray-800">Time Allowed: {questionPaper.timeAllowed} minutes</span>
+            <span className="text-sm font-semibold text-gray-800">Maximum Marks: {questionPaper.maxMarks}</span>
           </div>
 
           {/* Instructions */}
-          <div className="bg-yellow-50 border-b border-yellow-100 p-4">
-            <p className="text-sm text-yellow-800 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-              All questions are compulsory unless stated otherwise.
-            </p>
+          <div className="px-10 py-4 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-800">All questions are compulsory unless stated otherwise.</p>
           </div>
 
           {/* Student Info Section */}
-          <div className="p-8 border-b border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={studentInfo.name}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
-                  placeholder="Enter your name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Roll Number</label>
-                <input
-                  type="text"
-                  value={studentInfo.rollNumber}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, rollNumber: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
-                  placeholder="Enter roll number"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
-                <input
-                  type="text"
-                  value={studentInfo.section}
-                  onChange={(e) => setStudentInfo({ ...studentInfo, section: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
-                  placeholder="Enter section"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-10 py-5 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Name:</span>
+              <input
+                type="text"
+                value={studentInfo.name}
+                onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
+                placeholder="________________"
+                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Roll Number:</span>
+              <input
+                type="text"
+                value={studentInfo.rollNumber}
+                onChange={(e) => setStudentInfo({ ...studentInfo, rollNumber: e.target.value })}
+                placeholder="____________"
+                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Section:</span>
+              <input
+                type="text"
+                value={studentInfo.section}
+                onChange={(e) => setStudentInfo({ ...studentInfo, section: e.target.value })}
+                placeholder="________"
+                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+              />
             </div>
           </div>
 
           {/* Questions Sections */}
-          <div className="p-8">
-            {questionPaper.sections.map((section, sectionIdx) => (
-              <div key={sectionIdx} className="mb-10">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-1 h-8 bg-gradient-to-b from-orange-500 to-red-500 rounded-full"></div>
-                  <h2 className="text-xl font-bold text-gray-900">{section.title}</h2>
-                </div>
-                <p className="text-sm text-gray-500 mb-6 italic">{section.instruction}</p>
-                
-                <div className="space-y-4">
-                  {section.questions.map((question, qIdx) => (
-                    <div key={qIdx} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-start gap-2 mb-3">
-                            <span className="font-semibold text-gray-900 text-lg flex-shrink-0">
-                              {qIdx + 1}.
-                            </span>
+          <div className="px-10 py-8 space-y-10">
+            {questionPaper.sections.map((section, sectionIdx) => {
+              let qCounter = 0;
+              for (let i = 0; i < sectionIdx; i++) qCounter += questionPaper.sections[i].questions.length;
+              return (
+                <div key={sectionIdx}>
+                  <h2 className="text-base font-bold text-gray-900 text-center mb-1">{section.title}</h2>
+                  <div className="mb-1">
+                    <p className="text-sm font-bold text-gray-800">
+                      {section.questions[0] ? (section.instruction?.split('.')[0] || 'Questions') : ''}
+                    </p>
+                    {section.instruction && (
+                      <p className="text-xs text-gray-500 italic">{section.instruction}</p>
+                    )}
+                  </div>
+                  <ol className="mt-4 space-y-4 list-none">
+                    {section.questions.map((question, qIdx) => {
+                      const num = qCounter + qIdx + 1;
+                      return (
+                        <li key={qIdx} className="flex items-start gap-3">
+                          <span className="text-sm font-semibold text-gray-700 w-7 flex-shrink-0 mt-0.5">{num}.</span>
+                          <div className="flex-1 flex items-start justify-between gap-4">
                             <div className="flex-1">
-                              <div className="text-gray-800 whitespace-pre-line">
-                                {question.text}
-                              </div>
-                              
+                              <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{question.text}</p>
                               {question.options && question.options.length > 0 && (
-                                <div className="mt-3 ml-4 space-y-1.5">
+                                <div className="mt-2 ml-4 space-y-1">
                                   {question.options.map((option, optIdx) => {
                                     const letter = String.fromCharCode(65 + optIdx);
                                     let optionText = option;
@@ -443,36 +460,33 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
                                       optionText = optionText.replace(/^[A-D]\)\s*/, '');
                                     }
                                     return (
-                                      <div key={optIdx} className="text-sm text-gray-700">
-                                        <span className="font-medium text-gray-500 mr-2">{letter}.</span>
-                                        <span>{optionText}</span>
+                                      <div key={optIdx} className="text-sm text-gray-600">
+                                        {letter}. {optionText}
                                       </div>
                                     );
                                   })}
                                 </div>
                               )}
                             </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <DifficultyBadge difficulty={question.difficulty} />
+                              <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
+                                [{question.marks} Marks]
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                          <span className={`text-xs px-2 py-1 rounded-full ${getDifficultyColor(question.difficulty)}`}>
-                            {question.difficulty}
-                          </span>
-                          <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded-full">
-                            {question.marks} marks
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                        </li>
+                      );
+                    })}
+                  </ol>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* End of Paper */}
-          <div className="border-t border-gray-200 p-6 text-center text-gray-400 text-sm">
-            <p>*** End of Question Paper ***</p>
+          <div className="px-10 pb-8 text-center">
+            <p className="text-sm font-bold text-gray-800">End of Question Paper</p>
           </div>
         </div>
 
@@ -481,28 +495,14 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
           <div className="answer-key-section mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
             <button
               onClick={() => setShowAnswerKey(!showAnswerKey)}
-              className="w-full bg-gradient-to-r from-gray-800 to-gray-900 p-4 flex items-center justify-between hover:from-gray-700 hover:to-gray-800 transition"
+              className="w-full px-10 py-4 flex items-center justify-between text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors border-t border-gray-100"
             >
-              <div className="flex items-center gap-2">
-                <Award size={20} className="text-yellow-400" />
-                <h2 className="text-lg font-semibold text-white">Answer Key (Teacher Only)</h2>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDownloadAnswerKey(); }}
-                  className="flex items-center gap-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm transition"
-                >
-                  <Download size={14} />
-                  Download PDF
-                </button>
-                <ChevronDown size={20} className={`text-white transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
-              </div>
+              <span>Answer Key:</span>
+              <ChevronDown size={16} className={`text-gray-400 transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
             </button>
             {showAnswerKey && (
-              <div className="p-6 bg-gray-50">
-                <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono leading-relaxed">
-                  {questionPaper.answerKey}
-                </pre>
+              <div className="px-10 pb-8">
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{questionPaper.answerKey}</div>
               </div>
             )}
           </div>
@@ -512,6 +512,31 @@ const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/question-pa
         <div className="mt-6 text-center text-xs text-gray-400">
           <p>Generated by VedaAI - AI-Powered Assessment Platform</p>
           <p className="mt-1">Answer key available for teachers - click to reveal</p>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6">
+          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5">
+            <ChevronLeft size={14} />
+            Back to Dashboard
+          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/create')}
+              className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw size={14} />
+              Regenerate
+            </button>
+            <button
+              onClick={() => printPaper(printRef.current)}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: '#111' }}
+            >
+              <Download size={14} />
+              Download PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
