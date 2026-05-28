@@ -84,8 +84,8 @@ export default function CreateAssignment() {
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: 'Write',
-    className: 'Write',
+    subject: '',
+    className: '',
     dueDate: '',
     timeAllowed: 45,
     questionTypes: [] as QuestionType[],
@@ -550,6 +550,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all duration-200"
+                placeholder="e.g.,Science"
                 />
               </div>
               <div>
@@ -559,7 +560,8 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                   value={formData.className}
                   onChange={(e) => setFormData({ ...formData, className: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all duration-200"
-                />
+               placeholder="e.g.,5th"
+               />
               </div>
             </div>
 
