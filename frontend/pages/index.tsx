@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import {
   Search, Filter, Grid3x3, FileText, Loader2, X, Calendar, Clock, Eye,
-  CheckCircle, Zap, Activity
+  CheckCircle, Zap, Activity,Plus,Sparkles
 } from 'lucide-react';
 
 // ── Status Badge ──────────────────────────────────────────
@@ -152,17 +152,19 @@ function EmptyState() {
           <path d="M12 4v16M8 8H4M20 8h-4" stroke="currentColor" strokeLinecap="round" />
           <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" />
         </svg>
-      </div>
+      </div>d
       <h2 className="text-xl font-bold text-gray-800 mb-2">No assignments yet</h2>
       <p className="text-gray-500 text-sm max-w-xs mb-6">
         Create your first assignment to start collecting and grading student submissions.
       </p>
       <Link
-        href="/create"
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold text-sm shadow-lg"
-      >
-        + Create Your First Assignment
-      </Link>
+                href="/create"
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-white text-sm font-semibold"
+                style={{ background: '#111', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
+              >
+                <Plus size={16} />
+                Create Your First Assignment
+              </Link>
     </div>
   );
 }
@@ -228,122 +230,151 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar />
-      <div className="lg:ml-60 flex flex-col min-h-screen">
-        <TopBar backHref="/" backLabel="Home" />
-        <main className="flex-1 px-4 lg:px-8 py-6 pb-24 lg:pb-8">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="animate-spin text-orange-500 mb-4" size={40} />
-              <p className="text-gray-500 text-sm">Loading your assignments...</p>
-            </div>
-          ) : assignments.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <>
-              {/* Title & Stats */}
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 mb-1">My Assignments</h1>
-                <p className="text-sm text-gray-500">Manage and track all your AI-generated question papers</p>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {[
-                  { label: 'Total', value: stats.total, color: 'from-blue-500 to-blue-600', icon: Activity },
-                  { label: 'Completed', value: stats.completed, color: 'from-blue-500 to-blue-600', icon: CheckCircle },
-                  { label: 'Generating', value: stats.generating, color: 'from-blue-500 to-blue-600', icon: Zap },
-                  { label: 'Draft', value: stats.draft, color:'from-blue-500 to-blue-600', icon: FileText },
-                ].map((stat) => (
-                  <div key={stat.label} className="bg-white rounded-xl p-4 border shadow-sm hover:shadow-md transition">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-                        <p className="text-xs text-gray-500">{stat.label}</p>
-                      </div>
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.color} flex items-center justify-center`}>
-                        <stat.icon size={14} className="text-white" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Search & Filter */}
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="relative flex-1">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search assignments..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                  />
-                  {searchTerm && (
-                    <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 min-w-[180px]">
-                  <Filter size={14} className="text-gray-400" />
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
-                  >
-                    <option value="all">All Statuses</option>
-                    <option value="completed">Completed</option>
-                    <option value="generating">Generating</option>
-                    <option value="draft">Draft</option>
-                    <option value="failed">Failed</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex justify-end mb-4">
-                <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400'}`}
-                  >
-                    <Grid3x3 size={14} />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-500' : 'text-gray-400'}`}
-                  >
-                    <FileText size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Assignments List */}
-              {filteredAssignments.length === 0 ? (
-                <div className="bg-white rounded-xl p-8 text-center border">
-                  <p className="text-gray-500">No assignments match your filters</p>
-                  <button onClick={() => { setSearchTerm(''); setFilterStatus('all'); }} className="text-orange-500 text-sm mt-2">
-                    Clear filters
-                  </button>
-                </div>
-              ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                  {filteredAssignments.map((a: any) => (
-                    <AssignmentCard key={a._id} assignment={a} onDelete={handleDelete} viewMode={viewMode} />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredAssignments.map((a: any) => (
-                    <AssignmentCard key={a._id} assignment={a} onDelete={handleDelete} viewMode={viewMode} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </main>
+      <div className="lg:ml-60 flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  <TopBar backHref="/" backLabel="Home" />
+  
+  <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 lg:pb-8">
+    {isLoading ? (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-orange-100 border-t-orange-500 animate-spin" />
+          <Sparkles size={16} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-orange-400" />
+        </div>
+        <p className="text-gray-500 text-sm mt-4">Loading your assignments...</p>
       </div>
+    ) : assignments.length === 0 ? (
+      <EmptyState />
+    ) : (
+      <>
+        {/* Title Section with Gradient */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-red-500 rounded-full" />
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              My Assignments
+            </h1>
+          </div>
+          <p className="text-sm text-gray-500 pl-3">Manage and track all your AI-generated question papers</p>
+        </div>
+
+        {/* Stats Cards - Touch Friendly */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
+          {[
+            { label: 'Total', value: stats.total, color: 'from-blue-500 to-blue-600', icon: Activity, bg: 'bg-blue-50' },
+            { label: 'Completed', value: stats.completed, color: 'from-emerald-500 to-teal-600', icon: CheckCircle, bg: 'bg-emerald-50' },
+            { label: 'Generating', value: stats.generating, color: 'from-amber-500 to-orange-600', icon: Zap, bg: 'bg-amber-50' },
+            { label: 'Draft', value: stats.draft, color: 'from-slate-500 to-slate-600', icon: FileText, bg: 'bg-slate-50' },
+          ].map((stat) => (
+            <div 
+              key={stat.label} 
+              className={`${stat.bg} rounded-2xl p-4 border border-white/50 shadow-sm hover:shadow-md transition-all duration-300 active:scale-98`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-800">{stat.value}</p>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">{stat.label}</p>
+                </div>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-md`}>
+                  <stat.icon size={18} className="text-white" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search and Filter - Enhanced Touch Targets */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search assignments..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 min-w-[180px]">
+            <Filter size={18} className="text-gray-400 flex-shrink-0" />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all cursor-pointer"
+            >
+              <option value="all">📋 All Statuses</option>
+              <option value="completed">✅ Completed</option>
+              <option value="generating">⚡ Generating</option>
+              <option value="draft">📝 Draft</option>
+              <option value="failed">❌ Failed</option>
+            </select>
+          </div>
+        </div>
+
+        {/* View Toggle - Enhanced */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 shadow-inner">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-all duration-200 ${
+                viewMode === 'grid' 
+                  ? 'bg-white shadow-md text-orange-500' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <Grid3x3 size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-all duration-200 ${
+                viewMode === 'list' 
+                  ? 'bg-white shadow-md text-orange-500' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <FileText size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Assignments List - Enhanced Cards */}
+        {filteredAssignments.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center border border-gray-100 shadow-sm">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search size={24} className="text-gray-400" />
+            </div>
+            <p className="text-gray-500">No assignments match your filters</p>
+            <button 
+              onClick={() => { setSearchTerm(''); setFilterStatus('all'); }} 
+              className="text-orange-500 text-sm mt-3 hover:underline font-medium"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredAssignments.map((a: any) => (
+              <AssignmentCard key={a._id} assignment={a} onDelete={handleDelete} viewMode={viewMode} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredAssignments.map((a: any) => (
+              <AssignmentCard key={a._id} assignment={a} onDelete={handleDelete} viewMode={viewMode} />
+            ))}
+          </div>
+        )}
+      </>
+    )}
+  </main>
+</div>
     </div>
   );
 }

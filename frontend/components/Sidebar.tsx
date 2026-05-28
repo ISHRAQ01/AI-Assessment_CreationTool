@@ -9,7 +9,6 @@ import {
   Library,
   Settings,
   Sparkles,
-  ChevronLeft,
   Menu,
   X,
 } from 'lucide-react';
@@ -92,29 +91,31 @@ export default function Sidebar({
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="px-5 pt-5 pb-4 flex items-center justify-between">
+      <div className="px-4 sm:px-5 pt-5 pb-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <img 
-            src="/profile.png" 
+            src="/avatar.png" 
             alt="VedaAI Logo" 
-            className="rounded-full object-cover"
-            style={{ width: '40px', height: '40px' }}
+            className="rounded-full object-cover w-9 h-9 sm:w-10 sm:h-10"
           />
-          <span className="text-xl font-bold text-gray-900 tracking-tight">
-            VedaAI
-          </span>
+          <div>
+            <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
+              VedaAI
+            </span>
+            <p className="text-[10px] text-gray-400 hidden sm:block">AI Teaching Platform</p>
+          </div>
         </Link>
         {/* Mobile close */}
         <button
-          className="md:hidden p-1 text-gray-400 hover:text-gray-700"
+          className="md:hidden p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
           onClick={() => setMobileOpen(false)}
         >
-          <X size={18} />
+          <X size={20} />
         </button>
       </div>
 
       {/* CTA Button */}
-      <div className="px-4 pb-5">
+      <div className="px-3 sm:px-4 pb-4 sm:pb-5">
         <Link
           href={ctaHref}
           className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-full text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
@@ -125,7 +126,8 @@ export default function Sidebar({
           onClick={() => setMobileOpen(false)}
         >
           <Sparkles size={15} />
-          {ctaLabel}
+          <span className="hidden sm:inline">{ctaLabel}</span>
+          <span className="sm:hidden">New</span>
         </Link>
       </div>
 
@@ -145,7 +147,7 @@ export default function Sidebar({
               }`}
             >
               <Icon
-                size={16}
+                size={18}
                 className={active ? 'text-gray-700' : 'text-gray-400'}
               />
               <span className="flex-1">{label}</span>
@@ -178,7 +180,7 @@ export default function Sidebar({
           }`}
         >
           <Settings
-            size={16}
+            size={18}
             className={
               router.pathname === '/settings'
                 ? 'text-gray-700'
@@ -192,13 +194,13 @@ export default function Sidebar({
           <img 
             src="/avatar.png" 
             alt="School" 
-            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0"
           />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800 truncate">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
               Delhi Public School
             </p>
-            <p className="text-xs text-gray-400 truncate">Bokaro Steel City</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 truncate">Bokaro Steel City</p>
           </div>
         </div>
       </div>
@@ -214,20 +216,20 @@ export default function Sidebar({
 
       {/* Mobile hamburger trigger */}
       <button
-        className="md:hidden fixed top-3 left-3 z-30 w-9 h-9 flex items-center justify-center bg-white border border-gray-200 rounded-lg shadow-sm text-gray-600"
+        className="md:hidden fixed top-4 left-4 z-30 w-10 h-10 flex items-center justify-center bg-white border border-gray-200 rounded-xl shadow-sm text-gray-600 hover:bg-gray-50 transition-all duration-200"
         onClick={() => setMobileOpen(true)}
       >
-        <Menu size={18} />
+        <Menu size={20} />
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 bg-black/30 z-20"
+            className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="md:hidden w-72 bg-white border-r border-gray-100 flex flex-col fixed h-full z-30 shadow-xl">
+          <aside className="md:hidden fixed left-0 top-0 w-80 bg-white flex flex-col h-full z-50 shadow-2xl animate-in slide-in-from-left duration-300">
             <SidebarContent />
           </aside>
         </>

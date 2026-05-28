@@ -31,3 +31,109 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .no-print { display: none !important; }
   body { background: white; }
 }
+
+/* ============================================================ */
+/* MOBILE RESPONSIVE STYLES */
+/* ============================================================ */
+
+/* Mobile (up to 640px) */
+@media (max-width: 640px) {
+  /* General */
+  body {
+    font-size: 14px;
+  }
+  
+  /* Hide desktop sidebar on mobile */
+  .desktop-sidebar {
+    display: none !important;
+  }
+  
+  /* Make containers full width */
+  .container, 
+  .max-w-5xl, 
+  .max-w-4xl,
+  .max-w-7xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Stats cards - 2 columns on mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Assignment cards - single column */
+  .assignment-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Form inputs - full width */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+  
+  /* Buttons - full width on mobile */
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .action-buttons button,
+  .action-buttons a {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Question type grid */
+  .question-type-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+  
+  /* Student info section */
+  .student-info-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+  
+  /* Padding reductions */
+  .p-8 { padding: 1rem; }
+  .px-10 { padding-left: 1rem; padding-right: 1rem; }
+  .py-8 { padding-top: 1rem; padding-bottom: 1rem; }
+  
+  /* Font size reductions */
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  .text-3xl { font-size: 1.5rem; }
+  .text-2xl { font-size: 1.25rem; }
+  .text-xl { font-size: 1.125rem; }
+}
+
+/* Tablet (641px to 768px) */
+@media (min-width: 641px) and (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .assignment-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .px-10 { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+/* Ensure touch targets are large enough */
+@media (max-width: 768px) {
+  button, 
+  a,
+  [role="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better spacing for touch */
+  .gap-4 { gap: 0.75rem; }
+  .space-y-4 > * + * { margin-top: 0.75rem; }
+}
