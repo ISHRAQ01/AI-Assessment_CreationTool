@@ -51,8 +51,8 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
   };
   const style = map[difficulty] || map.Easy;
   return (
-    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${style.bg} ${style.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+    <span className={`inline-flex items-center gap-1 sm:gap-1.5 text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${style.bg} ${style.text}`}>
+      <span className={`w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full ${style.dot}`} />
       {difficulty}
     </span>
   );
@@ -333,119 +333,119 @@ export default function AssignmentOutput() {
 
       {/* Top Bar */}
       <header className="bg-white/80 backdrop-blur-lg border-b border-gray-100 sticky top-0 z-20">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition">
-            <ArrowLeft size={18} />
-            <span className="text-sm font-medium">Back to Dashboard</span>
+        <div className="px-3 sm:px-4 md:px-6 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 text-gray-600 hover:text-gray-900 transition">
+            <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" />
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline">Back to Dashboard</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handleCopyLink}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
             >
-              {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-              {copied ? 'Copied!' : 'Copy Link'}
+              {copied ? <Check size={14} className="sm:w-4 sm:h-4 text-green-500" /> : <Copy size={14} className="sm:w-4 sm:h-4" />}
+              <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy Link'}</span>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
 
         {/* AI Banner */}
         <div
-          className="rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className="rounded-xl sm:rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4"
           style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)' }}
         >
-          <p className="text-white text-sm leading-relaxed font-medium flex-1">
+          <p className="text-white text-xs sm:text-sm leading-relaxed font-medium flex-1">
             Certainly, {studentInfo.name || 'Teacher'}! Here are customized Question Papers for your{' '}
             {questionPaper.subject} – Class {questionPaper.className} students.
           </p>
         </div>
 
         {/* Question Paper Container */}
-        <div ref={printRef} className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div ref={printRef} className="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl overflow-hidden">
 
           {/* School Header */}
-          <div className="px-10 pt-10 pb-6 text-center border-b border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-900">Delhi Public School, Sector-4, Bokaro</h1>
-            <p className="mt-1.5 text-base font-semibold text-gray-700">Subject: {questionPaper.subject}</p>
-            <p className="text-base font-semibold text-gray-700">Class: {questionPaper.className}</p>
+          <div className="px-4 sm:px-6 md:px-10 pt-6 sm:pt-8 md:pt-10 pb-4 sm:pb-6 text-center border-b border-gray-100">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Delhi Public School, Sector-4, Bokaro</h1>
+            <p className="mt-1 sm:mt-1.5 text-sm sm:text-base font-semibold text-gray-700">Subject: {questionPaper.subject}</p>
+            <p className="text-sm sm:text-base font-semibold text-gray-700">Class: {questionPaper.className}</p>
           </div>
 
           {/* Meta Row */}
-          <div className="flex items-center justify-between px-10 py-4 border-b border-gray-100 bg-gray-50/50">
-            <span className="text-sm font-semibold text-gray-800">Time Allowed: {questionPaper.timeAllowed} minutes</span>
-            <span className="text-sm font-semibold text-gray-800">Maximum Marks: {questionPaper.maxMarks}</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 md:px-10 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50 gap-2 sm:gap-0">
+            <span className="text-xs sm:text-sm font-semibold text-gray-800">Time Allowed: {questionPaper.timeAllowed} minutes</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-800">Maximum Marks: {questionPaper.maxMarks}</span>
           </div>
 
           {/* Instructions */}
-          <div className="px-10 py-4 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">All questions are compulsory unless stated otherwise.</p>
+          <div className="px-4 sm:px-6 md:px-10 py-3 sm:py-4 border-b border-gray-100">
+            <p className="text-xs sm:text-sm font-semibold text-gray-800">All questions are compulsory unless stated otherwise.</p>
           </div>
 
           {/* Student Info Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-10 py-5 border-b border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-6 md:px-10 py-4 sm:py-5 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Name:</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 w-20 sm:w-24 flex-shrink-0">Name:</span>
               <input
                 type="text"
                 value={studentInfo.name}
                 onChange={(e) => setStudentInfo({ ...studentInfo, name: e.target.value })}
                 placeholder=""
-                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+                className="border-b border-gray-400 text-xs sm:text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Roll Number:</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 w-20 sm:w-24 flex-shrink-0">Roll Number:</span>
               <input
                 type="text"
                 value={studentInfo.rollNumber}
                 onChange={(e) => setStudentInfo({ ...studentInfo, rollNumber: e.target.value })}
                 placeholder=""
-                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+                className="border-b border-gray-400 text-xs sm:text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 w-24 flex-shrink-0">Section:</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 w-20 sm:w-24 flex-shrink-0">Section:</span>
               <input
                 type="text"
                 value={studentInfo.section}
                 onChange={(e) => setStudentInfo({ ...studentInfo, section: e.target.value })}
                 placeholder=""
-                className="border-b border-gray-400 text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
+                className="border-b border-gray-400 text-xs sm:text-sm text-gray-800 bg-transparent focus:outline-none focus:border-gray-800 w-full pb-0.5 transition-colors"
               />
             </div>
           </div>
 
           {/* Questions Sections */}
-          <div className="px-10 py-8 space-y-10">
+          <div className="px-4 sm:px-6 md:px-10 py-6 sm:py-8 space-y-8 sm:space-y-10">
             {questionPaper.sections.map((section, sectionIdx) => {
               let qCounter = 0;
               for (let i = 0; i < sectionIdx; i++) qCounter += questionPaper.sections[i].questions.length;
               return (
                 <div key={sectionIdx}>
-                  <h2 className="text-base font-bold text-gray-900 text-center mb-1">{section.title}</h2>
+                  <h2 className="text-sm sm:text-base font-bold text-gray-900 text-center mb-1">{section.title}</h2>
                   <div className="mb-1">
-                    <p className="text-sm font-bold text-gray-800">
+                    <p className="text-xs sm:text-sm font-bold text-gray-800">
                       {section.questions[0] ? (section.instruction?.split('.')[0] || 'Questions') : ''}
                     </p>
                     {section.instruction && (
                       <p className="text-xs text-gray-500 italic">{section.instruction}</p>
                     )}
                   </div>
-                  <ol className="mt-4 space-y-4 list-none">
+                  <ol className="mt-4 space-y-3 sm:space-y-4 list-none">
                     {section.questions.map((question, qIdx) => {
                       const num = qCounter + qIdx + 1;
                       return (
-                        <li key={qIdx} className="flex items-start gap-3">
-                          <span className="text-sm font-semibold text-gray-700 w-7 flex-shrink-0 mt-0.5">{num}.</span>
-                          <div className="flex-1 flex items-start justify-between gap-4">
+                        <li key={qIdx} className="flex items-start gap-2 sm:gap-3">
+                          <span className="text-xs sm:text-sm font-semibold text-gray-700 w-5 sm:w-7 flex-shrink-0 mt-0.5">{num}.</span>
+                          <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-start justify-between gap-2 sm:gap-4">
                             <div className="flex-1">
-                              <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{question.text}</p>
+                              <p className="text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{question.text}</p>
                               {question.options && question.options.length > 0 && (
-                                <div className="mt-2 ml-4 space-y-1">
+                                <div className="mt-2 ml-2 sm:ml-4 space-y-1">
                                   {question.options.map((option, optIdx) => {
                                     const letter = String.fromCharCode(65 + optIdx);
                                     let optionText = option;
@@ -453,7 +453,7 @@ export default function AssignmentOutput() {
                                       optionText = optionText.replace(/^[A-D]\)\s*/, '');
                                     }
                                     return (
-                                      <div key={optIdx} className="text-sm text-gray-600">
+                                      <div key={optIdx} className="text-xs sm:text-sm text-gray-600">
                                         {letter}. {optionText}
                                       </div>
                                     );
@@ -461,7 +461,7 @@ export default function AssignmentOutput() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 mt-1 sm:mt-0">
                               <DifficultyBadge difficulty={question.difficulty} />
                               <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
                                 [{question.marks} Marks]
@@ -478,71 +478,65 @@ export default function AssignmentOutput() {
           </div>
 
           {/* End of Paper */}
-          <div className="px-10 pb-8 text-center">
-            <p className="text-sm font-bold text-gray-800">End of Question Paper</p>
+          <div className="px-4 sm:px-6 md:px-10 pb-6 sm:pb-8 text-center">
+            <p className="text-xs sm:text-sm font-bold text-gray-800">End of Question Paper</p>
           </div>
         </div>
 
         {/* Answer Key Section */}
         {questionPaper.answerKey && (
-          <div className="answer-key-section mt-6 bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="answer-key-section mt-4 sm:mt-6 bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl overflow-hidden">
             <button
               onClick={() => setShowAnswerKey(!showAnswerKey)}
-              className="w-full px-10 py-4 flex items-center justify-between text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors border-t border-gray-100"
+              className="w-full px-4 sm:px-6 md:px-10 py-3 sm:py-4 flex items-center justify-between text-xs sm:text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors border-t border-gray-100"
             >
               <span>Answer Key:</span>
-              <ChevronDown size={16} className={`text-gray-400 transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`sm:w-4 sm:h-4 text-gray-400 transition-transform ${showAnswerKey ? 'rotate-180' : ''}`} />
             </button>
             {showAnswerKey && (
-              <div className="px-10 pb-8">
-                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{questionPaper.answerKey}</div>
+              <div className="px-4 sm:px-6 md:px-10 pb-6 sm:pb-8">
+                <div className="text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{questionPaper.answerKey}</div>
               </div>
             )}
           </div>
         )}
 
         {/* Footer Note */}
-        <div className="mt-6 text-center text-xs text-gray-400">
+        <div className="mt-4 sm:mt-6 text-center text-xs text-gray-400">
           <p>Generated by VedaAI - AI-Powered Assessment Platform</p>
           <p className="mt-1">Answer key available for teachers - click to reveal</p>
         </div>
 
         {/* Action Bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6">
-          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 sm:mt-6">
+          <Link href="/" className="text-xs sm:text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5 order-2 sm:order-1">
             <ChevronLeft size={14} />
             Back to Dashboard
           </Link>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6">
-            <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1.5">
-              <ChevronLeft size={14} />
-              Back to Dashboard
-            </Link>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/create')}
-                className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                <RefreshCw size={14} />
-                Regenerate
-              </button>
-              <button
-                onClick={handleDownloadPDF}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: '#111' }}
-              >
-                <Download size={14} />
-                Download Paper
-              </button>
-              <button
-                onClick={handleDownloadAnswerKey}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
-              >
-                <Award size={14} />
-                Download Answer Key
-              </button>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto order-1 sm:order-2">
+            <button
+              onClick={() => router.push('/create')}
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-200 rounded-full text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors w-full sm:w-auto"
+            >
+              <RefreshCw size={14} />
+              Regenerate
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold text-white transition-all hover:opacity-90 w-full sm:w-auto"
+              style={{ background: '#111' }}
+            >
+              <Download size={14} />
+              Download Paper
+            </button>
+            <button
+              onClick={handleDownloadAnswerKey}
+              className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-semibold text-white transition-all hover:opacity-90 w-full sm:w-auto"
+              style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)' }}
+            >
+              <Award size={14} />
+              Download Answer Key
+            </button>
           </div>
         </div>
       </div>

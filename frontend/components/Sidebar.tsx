@@ -94,7 +94,7 @@ export default function Sidebar({
       <div className="px-4 sm:px-5 pt-5 pb-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <img 
-            src="/avatar.png" 
+            src="/profile.png" 
             alt="VedaAI Logo" 
             className="rounded-full object-cover w-9 h-9 sm:w-10 sm:h-10"
           />
@@ -102,7 +102,7 @@ export default function Sidebar({
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
               VedaAI
             </span>
-            <p className="text-[10px] text-gray-400 hidden sm:block">AI Teaching Platform</p>
+            <p className="text-[10px] text-gray-400 hidden sm:block">AI ASSESSMENT CREATOR</p>
           </div>
         </Link>
         {/* Mobile close */}
