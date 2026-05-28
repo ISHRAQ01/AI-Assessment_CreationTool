@@ -85,7 +85,7 @@ export default function CreateAssignment() {
   const [formData, setFormData] = useState({
     title: '',
     subject: 'Science',
-    className: '8th',
+    className: '5th',
     dueDate: '',
     timeAllowed: 45,
     questionTypes: [] as QuestionType[],
