@@ -23,7 +23,7 @@ const questionTypeOptions = [
   'Jumble Sentence / Make Sentence',
   'Diagram/Graph-Based Questions',
   'Numerical Problems',
-  'More Feature Coming [Thank You For Using VedaAi'
+  'More Feature Coming [Thank You For Using VedaAi]'
 ];
 
 // Stepper Component with manual input support - Enhanced
@@ -88,10 +88,10 @@ export default function CreateAssignment() {
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: '',
-    className: '',
+    subject: 'Write',
+    className: 'Write',
     dueDate: '',
-    timeAllowed: 0,
+    timeAllowed: 45,
     questionTypes: [] as QuestionType[],
     additionalInstructions: '',
   });
