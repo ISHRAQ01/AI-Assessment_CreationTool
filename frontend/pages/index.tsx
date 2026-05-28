@@ -152,7 +152,7 @@ function EmptyState() {
           <path d="M12 4v16M8 8H4M20 8h-4" stroke="currentColor" strokeLinecap="round" />
           <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" />
         </svg>
-      </div>d
+      </div>
       <h2 className="text-xl font-bold text-gray-800 mb-2">No assignments yet</h2>
       <p className="text-gray-500 text-sm max-w-xs mb-6">
         Create your first assignment to start collecting and grading student submissions.
