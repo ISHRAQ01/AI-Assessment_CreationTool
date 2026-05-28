@@ -224,7 +224,7 @@ CRITICAL RULES
   try {
     const completion = await groq.chat.completions.create({
   messages: [{ role: 'user', content: prompt }],
-  model: 'llama-3.3-70b-versatile', 
+  model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
   temperature: 0.7,
   max_tokens: 4096,
   response_format: { type: 'json_object' },
