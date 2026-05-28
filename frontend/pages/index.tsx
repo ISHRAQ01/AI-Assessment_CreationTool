@@ -394,7 +394,7 @@ export default function Dashboard() {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-white">
           <div className="flex items-center gap-3 w-full p-3">
             <img 
-              src="/avataat.png" 
+              src="/avatar.png" 
               alt="School" 
               className="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100" 
             />
@@ -411,7 +411,7 @@ export default function Dashboard() {
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <img 
-              src="/icon.png" 
+              src="/profile.png" 
               alt="Icon" 
               className="rounded-full object-cover"
               style={{ width: '59px', height: '56px', opacity: 1 }}
@@ -454,7 +454,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 w-full p-3">
             <div className="relative">
               <img 
-                src="/avataat.png" 
+                src="/avatar.png" 
                 alt="School" 
                 className="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100" 
               />
@@ -532,7 +532,7 @@ export default function Dashboard() {
               {/* Profile Button - Simple without modal */}
               <div className="flex items-center gap-2 p-1.5">
                 <img 
-                  src="/avataat.png" 
+                  src="/avatar.png" 
                   alt="Profile" 
                   className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-100" 
                 />
