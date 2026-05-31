@@ -152,15 +152,40 @@ export default function AssignmentOutput() {
               text = text.replace(/^Question:\s*/i, '');
 
               if (isMcqSection) {
-                const optionRegex = /([A-D]\))\s*([^\n]+)/g;
-                const matches = [...text.matchAll(optionRegex)];
+                // IMPROVED: Try multiple option regex patterns
+                let options: string[] = [];
+                let questionText = text;
 
-                if (matches.length >= 4) {
-                  const options = matches.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
+                // Pattern 1: A) Option  B) Option  C) Option  D) Option
+                const pattern1 = /([A-D]\))\s*([^\n]+)/g;
+                const matches1 = [...text.matchAll(pattern1)];
+                
+                // Pattern 2: A. Option  B. Option  C. Option  D. Option
+                const pattern2 = /([A-D]\.)\s*([^\n]+)/g;
+                const matches2 = [...text.matchAll(pattern2)];
+                
+                // Pattern 3: (A) Option  (B) Option  (C) Option  (D) Option
+                const pattern3 = /\(([A-D])\)\s*([^\n]+)/g;
+                const matches3 = [...text.matchAll(pattern3)];
+
+                if (matches1.length >= 4) {
+                  options = matches1.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
                   const firstOptionIndex = text.search(/\n[A-D]\)/);
-                  let questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
-                  questionText = questionText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+                  questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
+                } else if (matches2.length >= 4) {
+                  options = matches2.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
+                  const firstOptionIndex = text.search(/\n[A-D]\./);
+                  questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
+                } else if (matches3.length >= 4) {
+                  options = matches3.slice(0, 4).map(m => `(${m[1]}) ${m[2].trim()}`);
+                  const firstOptionIndex = text.search(/\n\([A-D]\)/);
+                  questionText = firstOptionIndex !== -1 ? text.substring(0, firstOptionIndex).trim() : text;
+                }
 
+                // Clean question text
+                questionText = questionText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+
+                if (options.length >= 4) {
                   return {
                     ...question,
                     text: questionText,
@@ -451,6 +476,10 @@ export default function AssignmentOutput() {
                                     let optionText = option;
                                     if (optionText.match(/^[A-D]\)\s*/)) {
                                       optionText = optionText.replace(/^[A-D]\)\s*/, '');
+                                    } else if (optionText.match(/^[A-D]\.\s*/)) {
+                                      optionText = optionText.replace(/^[A-D]\.\s*/, '');
+                                    } else if (optionText.match(/^\([A-D]\)\s*/)) {
+                                      optionText = optionText.replace(/^\([A-D]\)\s*/, '');
                                     }
                                     return (
                                       <div key={optIdx} className="text-xs sm:text-sm text-gray-600">
