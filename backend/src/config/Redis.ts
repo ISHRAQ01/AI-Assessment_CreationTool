@@ -13,7 +13,18 @@ const redisClient = new Redis(redisUrl, {
   },
 });
 
-redisClient.on('connect', () => console.log('✅ Redis connected'));
+redisClient.on('connect', async () => {
+  console.log('✅ Redis connected');
+  
+  // Fix eviction policy
+  try {
+    await redisClient.config('SET', 'maxmemory-policy', 'noeviction');
+    console.log('✅ Redis eviction policy set to noeviction');
+  } catch (err) {
+    console.warn('⚠️ Could not set eviction policy (may not be supported on this Redis provider):', err.message);
+  }
+});
+
 redisClient.on('error', (err) => console.error('Redis error:', err));
 
 export default redisClient;
