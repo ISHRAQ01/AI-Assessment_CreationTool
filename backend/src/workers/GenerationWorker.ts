@@ -15,6 +15,8 @@ interface IQuestion {
   text: string;
   difficulty: string;
   marks: number;
+  options?: string[];
+  correctAnswer?: string;
 }
 
 interface ISection {
@@ -31,6 +33,8 @@ interface IGeneratedResponse {
       text?: string;
       difficulty?: string;
       marks?: number;
+      options?: string[];
+      correctAnswer?: string;
     }>;
   }>;
   answerKey?: string;
@@ -79,11 +83,66 @@ const worker = new Worker<JobData>(
             instruction: section.instruction || 'Attempt all questions',
             questions: (section.questions || [])
               .filter((q) => q && typeof q.text === 'string' && q.text.trim().length > 0)
-              .map((q) => ({
-                text: q.text?.trim() || '',
-                difficulty: normalizeDifficulty(q.difficulty || 'Moderate'),
-                marks: q.marks || 2,
-              })),
+              .map((q) => {
+                const questionText = q.text?.trim() || '';
+                const isMcqSection = section.title?.toLowerCase().includes('multiple choice') || false;
+                
+                let options: string[] | undefined = undefined;
+                let cleanText = questionText;
+                let correctAnswer: string | undefined = undefined;
+                
+                if (isMcqSection) {
+                  // Extract options from text - Pattern 1: A) B) C) D)
+                  const optionRegex = /([A-D]\))\s*([^\n]+)/g;
+                  const matches = [...questionText.matchAll(optionRegex)];
+                  
+                  // Pattern 2: A. B. C. D.
+                  const optionRegex2 = /([A-D]\.)\s*([^\n]+)/g;
+                  const matches2 = [...questionText.matchAll(optionRegex2)];
+                  
+                  // Pattern 3: (A) (B) (C) (D)
+                  const optionRegex3 = /\(([A-D])\)\s*([^\n]+)/g;
+                  const matches3 = [...questionText.matchAll(optionRegex3)];
+                  
+                  if (matches.length >= 4) {
+                    options = matches.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
+                    const firstOptionIndex = questionText.search(/\n[A-D]\)/);
+                    if (firstOptionIndex !== -1) {
+                      cleanText = questionText.substring(0, firstOptionIndex).trim();
+                    }
+                  } else if (matches2.length >= 4) {
+                    options = matches2.slice(0, 4).map(m => `${m[1]} ${m[2].trim()}`);
+                    const firstOptionIndex = questionText.search(/\n[A-D]\./);
+                    if (firstOptionIndex !== -1) {
+                      cleanText = questionText.substring(0, firstOptionIndex).trim();
+                    }
+                  } else if (matches3.length >= 4) {
+                    options = matches3.slice(0, 4).map(m => `(${m[1]}) ${m[2].trim()}`);
+                    const firstOptionIndex = questionText.search(/\n\([A-D]\)/);
+                    if (firstOptionIndex !== -1) {
+                      cleanText = questionText.substring(0, firstOptionIndex).trim();
+                    }
+                  }
+                  
+                  // Extract answer from [Answer: X]
+                  const answerMatch = questionText.match(/\[Answer:\s*([A-D])\]/i);
+                  if (answerMatch) {
+                    correctAnswer = answerMatch[1];
+                  }
+                  
+                  // Clean up question text
+                  cleanText = cleanText.replace(/\[Answer:\s*[A-D]\]/i, '').trim();
+                  cleanText = cleanText.replace(/^Question:\s*/i, '').trim();
+                }
+                
+                return {
+                  text: cleanText,
+                  difficulty: normalizeDifficulty(q.difficulty || 'Moderate'),
+                  marks: q.marks || 2,
+                  ...(options && { options }),
+                  ...(correctAnswer && { correctAnswer }),
+                };
+              }),
           }));
       }
 
@@ -92,9 +151,7 @@ const worker = new Worker<JobData>(
       console.log(`Valid sections: ${validSections.length}`);
       console.log(`Total questions: ${validSections.reduce((sum, s) => sum + s.questions.length, 0)}`);
 
-      // ============================================================
-      // 🔧 PARSE AI's ANSWER KEY
-      // ============================================================
+      // Parse AI's ANSWER KEY
       let aiAnswers: Map<number, string> = new Map();
       
       if (generated.answerKey) {
@@ -112,9 +169,7 @@ const worker = new Worker<JobData>(
         console.log(`📋 Retrieved ${aiAnswers.size} answers from AI`);
       }
 
-      // ============================================================
-      // 🔧 Generate SECTION-WISE Answer Key with proper dividers
-      // ============================================================
+      // Generate SECTION-WISE Answer Key
       let sectionWiseAnswerKey = '';
       let globalQuestionNumber = 1;
 
@@ -122,7 +177,6 @@ const worker = new Worker<JobData>(
         const section = validSections[s];
         const isMcqSection = section.title.toLowerCase().includes('multiple choice');
         
-        // Add section header
         sectionWiseAnswerKey += `\n${'='.repeat(60)}\n`;
         sectionWiseAnswerKey += `${section.title}\n`;
         sectionWiseAnswerKey += `${'='.repeat(60)}\n`;
@@ -136,6 +190,11 @@ const worker = new Worker<JobData>(
             answer = aiAnswers.get(globalQuestionNumber) || '';
           }
           
+          // For MCQ, try to extract from question's correctAnswer field
+          if (!answer && isMcqSection && question.correctAnswer) {
+            answer = question.correctAnswer;
+          }
+          
           // For MCQ, try to extract from question text if not found
           if (!answer && isMcqSection) {
             const answerMatch = question.text.match(/\[Answer:\s*([A-D])\]/i);
@@ -144,7 +203,6 @@ const worker = new Worker<JobData>(
             }
           }
           
-          // Final fallback
           if (!answer) {
             answer = 'Answer not available';
           }
@@ -153,7 +211,6 @@ const worker = new Worker<JobData>(
           globalQuestionNumber++;
         }
         
-        // Add empty line between sections
         sectionWiseAnswerKey += `\n`;
       }
 
