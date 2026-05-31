@@ -3,7 +3,14 @@ import Groq from 'groq-sdk';
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-//Aiservice
+
+// Available models to try in order
+const AVAILABLE_MODELS = [
+  process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
+];
+
 interface GenerateParams {
   title: string;
   subject: string;
@@ -11,6 +18,24 @@ interface GenerateParams {
   questionTypes: Array<{ type: string; numberOfQuestions: number; marksPerQuestion: number }>;
   totalMarks: number;
   additionalInstructions?: string;
+}
+
+// Helper to try generation with a specific model
+async function tryGenerateWithModel(prompt: string, model: string) {
+  console.log(`🔄 Trying model: ${model}`);
+  
+  const completion = await groq.chat.completions.create({
+    messages: [{ role: 'user', content: prompt }],
+    model: model,
+    temperature: 0.7,
+    max_tokens: 4096,
+    response_format: { type: 'json_object' },
+  });
+  
+  const response = completion.choices[0]?.message?.content;
+  if (!response) throw new Error('No response from AI');
+  
+  return response;
 }
 
 export async function generateQuestionPaper(params: GenerateParams) {
@@ -24,7 +49,7 @@ export async function generateQuestionPaper(params: GenerateParams) {
   if (hasFileContent && params.additionalInstructions) {
     const match = params.additionalInstructions.match(/--- FILE CONTENT START ---\n([\s\S]*?)\n--- END FILE CONTENT ---/);
     if (match) {
-      fileContentText = match[1].substring(0, 4000);
+      fileContentText = match[1].substring(0, 2000); // Reduced from 4000
       userInstructions = params.additionalInstructions.replace(/--- FILE CONTENT START ---[\s\S]*?--- END FILE CONTENT ---/, '').trim();
     }
   }
@@ -36,17 +61,10 @@ export async function generateQuestionPaper(params: GenerateParams) {
     sectionsList += `   Section ${sectionLetter}: ${qt.type} (${qt.numberOfQuestions} questions, ${qt.marksPerQuestion} marks each)\n`;
   }
 
-  let prompt = `You are an expert exam paper generator. Create a complete question paper with REAL questions and their CORRECT answers.
-
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                    CRITICAL: GENERATE REAL QUESTIONS                          ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-
-DO NOT use placeholders like "Question 1:" or "Sample question".
-You MUST write ACTUAL, MEANINGFUL questions based on the subject and topic.
+  let prompt = `You are an expert exam paper generator. Create a complete question paper with REAL questions.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXACT SECTION ORDER
+SECTIONS REQUIRED
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${sectionsList}
@@ -58,7 +76,6 @@ TOPIC / SUBJECT
 
   if (fileContentText) {
     prompt += `Generate questions based ONLY on this content:
-
 --- CONTENT ---
 ${fileContentText}
 --- END CONTENT ---
@@ -74,8 +91,7 @@ Generate ${totalQuestions} questions about "${params.title}" for ${params.subjec
 `;
   }
 
-  prompt += `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUESTION FORMAT BY TYPE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -85,55 +101,21 @@ QUESTION FORMAT BY TYPE
     const qt = params.questionTypes[i];
     const sectionLetter = String.fromCharCode(65 + i);
     
-    prompt += `╔═══════════════════════════════════════════════════════════════════════════════╗\n`;
-    prompt += `║ SECTION ${sectionLetter}: ${qt.type.toUpperCase()}                                                       ║\n`;
-    prompt += `╚═══════════════════════════════════════════════════════════════════════════════╝\n`;
+    prompt += `SECTION ${sectionLetter}: ${qt.type.toUpperCase()}\n`;
     
     if (qt.type === 'Multiple Choice Questions') {
-      prompt += `Write ${qt.numberOfQuestions} REAL Multiple Choice Questions about ${params.title}.
-
-Example of a GOOD MCQ:
-Question: What is the SI unit of force?
-A) Joule
-B) Watt
-C) Newton
-D) Pascal
-[Answer: C]
-
-`;
-    } 
-    else if (qt.type === 'Short Questions') {
-      prompt += `Write ${qt.numberOfQuestions} REAL Short Answer Questions about ${params.title}.
-
-Example of a GOOD short question:
-Explain Newton's first law of motion with an example.
-
-`;
+      prompt += `Write ${qt.numberOfQuestions} MCQs with A) B) C) D) options and [Answer: X].\n\n`;
+    } else if (qt.type === 'Short Questions') {
+      prompt += `Write ${qt.numberOfQuestions} Short Answer Questions.\n\n`;
+    } else if (qt.type === 'Numerical Problems') {
+      prompt += `Write ${qt.numberOfQuestions} Numerical Problems with calculated answers.\n\n`;
+    } else if (qt.type === 'Diagram/Graph-Based Questions') {
+      prompt += `Write ${qt.numberOfQuestions} Diagram/Graph questions.\n\n`;
     }
-    else if (qt.type === 'Numerical Problems') {
-      prompt += `Write ${qt.numberOfQuestions} REAL Numerical Problems about ${params.title}.
-
-Example of a GOOD numerical problem:
-A car accelerates from rest at 2 m/s² for 5 seconds. Calculate its final velocity.
-
-Answer in answerKey: 10 m/s
-
-`;
-    }
-    else if (qt.type === 'Diagram/Graph-Based Questions') {
-      prompt += `Write ${qt.numberOfQuestions} REAL Diagram/Graph questions about ${params.title}.
-
-Example of a GOOD diagram question:
-Draw a labeled diagram showing the structure of a neuron.
-
-`;
-    }
-    prompt += `\n`;
   }
 
-  prompt += `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-JSON OUTPUT
+  prompt += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+JSON OUTPUT FORMAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {
@@ -147,39 +129,16 @@ JSON OUTPUT
     prompt += `
     {
       "title": "${sectionName}",
-      "instruction": "Attempt all questions. Each question carries ${qt.marksPerQuestion} marks.",
+      "instruction": "Attempt all questions. Each carries ${qt.marksPerQuestion} marks.",
       "questions": [`;
 
     for (let j = 0; j < qt.numberOfQuestions; j++) {
-      if (qt.type === 'Multiple Choice Questions') {
-        prompt += `
+      prompt += `
         {
-          "text": "Question: What is the SI unit of force?\\\\nA) Joule\\\\nB) Watt\\\\nC) Newton\\\\nD) Pascal\\\\n[Answer: C]",
-          "difficulty": "Easy",
+          "text": "actual question here",
+          "difficulty": "Moderate",
           "marks": ${qt.marksPerQuestion}
         }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
-      } else if (qt.type === 'Numerical Problems') {
-        prompt += `
-        {
-          "text": "A car accelerates from rest at 2 m/s² for 5 seconds. Calculate its final velocity.",
-          "difficulty": "Easy",
-          "marks": ${qt.marksPerQuestion}
-        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
-      } else if (qt.type === 'Short Questions') {
-        prompt += `
-        {
-          "text": "Explain Newton's first law of motion with an example.",
-          "difficulty": "Easy",
-          "marks": ${qt.marksPerQuestion}
-        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
-      } else {
-        prompt += `
-        {
-          "text": "Draw a labeled diagram showing the structure of a neuron.",
-          "difficulty": "Easy",
-          "marks": ${qt.marksPerQuestion}
-        }${j < qt.numberOfQuestions - 1 ? ',' : ''}`;
-      }
     }
     
     prompt += `
@@ -187,52 +146,56 @@ JSON OUTPUT
     }${i < params.questionTypes.length - 1 ? ',' : ''}`;
   }
 
-  // Build dynamic answer key
-  let answerKeyEntries = [];
-  let counter = 1;
-  for (const qt of params.questionTypes) {
-    for (let j = 0; j < qt.numberOfQuestions; j++) {
-      if (qt.type === 'Multiple Choice Questions') {
-        answerKeyEntries.push(`${counter}. C`);
-      } else if (qt.type === 'Numerical Problems') {
-        answerKeyEntries.push(`${counter}. 10 m/s`);
-      } else if (qt.type === 'Short Questions') {
-        answerKeyEntries.push(`${counter}. Newton's first law states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force. For example, a book on a table remains stationary until someone pushes it.`);
-      } else {
-        answerKeyEntries.push(`${counter}. The diagram should show a labeled neuron with dendrites, cell body, axon, and axon terminals.`);
-      }
-      counter++;
-    }
-  }
-
   prompt += `
   ],
-  "answerKey": "${answerKeyEntries.join('\\n')}"
+  "answerKey": "1. Answer1\\n2. Answer2\\n..."
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CRITICAL RULES
+RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-1. Write REAL, MEANINGFUL questions - NOT "Question 1:" or "Sample question".
-2. Each question MUST be based on "${params.title}" for ${params.subject}.
-3. For MCQ: Include A), B), C), D) options and [Answer: X].
-4. For Numerical: Provide the actual calculated answer.
-5. Return ONLY valid JSON.
+1. Write REAL questions about "${params.title}" for ${params.subject}.
+2. MCQ: Include A) B) C) D) options and [Answer: X] in question text.
+3. Numerical: Provide calculated answer in answerKey.
+4. Return ONLY valid JSON. No markdown, no extra text.
 `;
 
+  // ========== MODEL FALLBACK SYSTEM ==========
   try {
-    const completion = await groq.chat.completions.create({
-  messages: [{ role: 'user', content: prompt }],
-  model: process.env.GROQ_MODEL || 'llama-3.1-70b-versatile',
-  temperature: 0.7,
-  max_tokens: 4096,
-  response_format: { type: 'json_object' },
-});
-    const response = completion.choices[0]?.message?.content;
-    if (!response) throw new Error('No response from AI');
-    console.log('AI response received');
-    
+    let response: string | null = null;
+    let usedModel: string | null = null;
+    let lastError: any = null;
+
+    // Try each model until one works
+    for (const model of AVAILABLE_MODELS) {
+      try {
+        response = await tryGenerateWithModel(prompt, model);
+        usedModel = model;
+        console.log(`✅ Success with model: ${model}`);
+        break;
+      } catch (error: any) {
+        lastError = error;
+        const errorMsg = error?.message || error?.toString() || '';
+        
+        if (errorMsg.includes('rate_limit') || errorMsg.includes('429')) {
+          console.log(`⚠️ Rate limited on ${model}, trying next model...`);
+        } else if (errorMsg.includes('decommissioned') || errorMsg.includes('not_found') || errorMsg.includes('404')) {
+          console.log(`⚠️ Model ${model} unavailable, trying next...`);
+        } else if (errorMsg.includes('too large') || errorMsg.includes('413')) {
+          console.log(`⚠️ Prompt too large for ${model}, trying next...`);
+        } else {
+          console.log(`❌ Error with ${model}: ${errorMsg}, trying next...`);
+        }
+        continue;
+      }
+    }
+
+    if (!response) {
+      throw new Error(`All models failed. Last error: ${lastError?.message || 'Unknown'}`);
+    }
+
+    console.log(`📝 Parsing response from ${usedModel}...`);
     const parsed = JSON.parse(response);
     
     if (!parsed.sections || !Array.isArray(parsed.sections)) {
@@ -246,7 +209,7 @@ CRITICAL RULES
       parsed.sections[i].title = expectedTitle;
     }
     
-    console.log(`✅ Generated ${parsed.sections.length} sections with real questions`);
+    console.log(`✅ Generated ${parsed.sections.length} sections with real questions using ${usedModel}`);
     
     return parsed;
   } catch (error) {
