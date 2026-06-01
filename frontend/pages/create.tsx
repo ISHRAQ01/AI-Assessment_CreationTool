@@ -664,77 +664,54 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
             </div>
 
             {/* Question Types */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-800">Question Type</span>
-                <div className="flex items-center gap-8 pr-2">
-                  <span className="text-xs font-medium text-gray-500">No. of Questions</span>
-                  <span className="text-xs font-medium text-gray-500">Marks</span>
-                </div>
-              </div>
+            <div className="space-y-3">
+              {formData.questionTypes.map((qt, index) => (
+                <div key={index} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center bg-gray-50/50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none hover:bg-gray-50 transition-colors">
+                  {/* Question Type Select */}
+                  <div className="w-full sm:col-span-5">
+                    <select
+                      value={qt.type}
+                      onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white"
+                    >
+                      {questionTypeOptions.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="space-y-3">
-                {formData.questionTypes.map((qt, index) => (
-                  <div key={index} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center bg-gray-50/50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none hover:bg-gray-50 transition-colors">
-                    {/* Question Type Select */}
-                    <div className="w-full sm:col-span-5">
-                      <select
-                        value={qt.type}
-                        onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white"
-                      >
-                        {questionTypeOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Number of Questions Stepper */}
+                  <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
+                    <span className="text-xs text-gray-500 sm:hidden font-medium">Questions:</span>
+                    <Stepper
+                      value={qt.numberOfQuestions}
+                      onChange={(v) => updateQuestionType(index, 'numberOfQuestions', v)}
+                    />
+                  </div>
 
-                    {/* Number of Questions Stepper */}
-                    <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
-                      <span className="text-xs text-gray-500 sm:hidden font-medium">Questions:</span>
-                      <Stepper
-                        value={qt.numberOfQuestions}
-                        onChange={(v) => updateQuestionType(index, 'numberOfQuestions', v)}
-                      />
-                    </div>
+                  {/* Marks Stepper */}
+                  <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
+                    <span className="text-xs text-gray-500 sm:hidden font-medium">Marks:</span>
+                    <Stepper
+                      value={qt.marksPerQuestion}
+                      onChange={(v) => updateQuestionType(index, 'marksPerQuestion', v)}
+                    />
+                  </div>
 
-                    {/* Marks Stepper */}
-                    <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
-                      <span className="text-xs text-gray-500 sm:hidden font-medium">Marks:</span>
-                      <Stepper
-                        value={qt.marksPerQuestion}
-                        onChange={(v) => updateQuestionType(index, 'marksPerQuestion', v)}
-                      />
-                    </div>
-
-                    {/* Delete Button */}
-                    <div className="flex justify-end w-full sm:w-auto sm:col-span-1">
+                  {/* Delete Button */}
+                  <div className="flex justify-end w-full sm:w-auto sm:col-span-1">
+                    {formData.questionTypes.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeQuestionType(index)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
                       >
-                        <X size={12} />
+                        <Trash2 size={16} />
                       </button>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-
-              <button type="button" onClick={addQuestionType}
-                className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
-                  <Plus size={13} className="text-white" />
                 </div>
-                Add Question Type
-              </button>
-
-              {totalQuestions > 0 && (
-                <div className="mt-4 flex flex-col items-end gap-0.5 text-sm font-medium text-gray-700">
-                  <span>Total Questions : {totalQuestions}</span>
-                  <span>Total Marks : {totalMarks}</span>
-                </div>
-              )}
+              ))}
             </div>
 
             {/* Totals Section */}
