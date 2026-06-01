@@ -91,7 +91,7 @@ export default function CreateAssignment() {
     dueDate: '',
     timeAllowed: 45,
     questionTypes: [
-      { type: '', numberOfQuestions: 5, marksPerQuestion: 1 },
+      { type: 'Multiple Choice Questions', numberOfQuestions: 5, marksPerQuestion: 1 },
     ] as QuestionType[],
     additionalInstructions: '',
   });
@@ -670,24 +670,13 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 <h2 className="text-lg font-bold text-gray-800">Configure Question Types</h2>
               </div>
 
-              {/* Desktop Header */}
-              <div className="hidden sm:grid grid-cols-12 gap-4 mb-3 text-xs font-semibold text-gray-500 px-2">
-                <div className="col-span-5">Question Type</div>
-                <div className="col-span-3 text-center">No. of Questions</div>
-                <div className="col-span-3 text-center">Marks per Question</div>
-                <div className="col-span-1"></div>
-              </div>
-
-              {/* Mobile Header */}
-              <div className="block sm:hidden mb-3 px-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold text-gray-500">Question Type</span>
-                  <div className="flex gap-6">
-                    <span className="text-xs font-semibold text-gray-500">Qty</span>
-                    <span className="text-xs font-semibold text-gray-500">Marks</span>
-                  </div>
-                </div>
-              </div>
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-gray-800">Question Type</span>
+                  <div className="flex items-center gap-8 pr-2">
+                    <span className="text-xs font-medium text-gray-500">No. of Questions</span>
+                    <span className="text-xs font-medium text-gray-500">Marks</span>
+                  </div></div></div>
 
               <div className="space-y-3">
                 {formData.questionTypes.map((qt, index) => (
