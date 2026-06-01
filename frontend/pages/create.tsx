@@ -90,9 +90,7 @@ export default function CreateAssignment() {
     className: '',
     dueDate: '',
     timeAllowed: 45,
-    questionTypes: [
-      { type: 'Multiple Choice Questions', numberOfQuestions: 5, marksPerQuestion: 1 },
-    ] as QuestionType[],
+    questionTypes: [] as QuestionType[],
     additionalInstructions: '',
   });
 
