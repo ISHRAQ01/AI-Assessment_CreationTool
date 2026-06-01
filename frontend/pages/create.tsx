@@ -15,7 +15,7 @@ interface QuestionType {
   marksPerQuestion: number;
 }
 
-const questionTypeOptions= [
+const questionTypeOptions = [
   'Multiple Choice Questions',
   'Short Questions',
   'Diagram/Graph-Based Questions',
@@ -467,15 +467,15 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                   key={item.name}
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${item.active
-                      ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                 >
                   <item.icon
                     size={18}
                     className={`transition-all duration-200 ${item.active
-                        ? 'text-orange-500'
-                        : 'text-gray-400 group-hover:text-gray-600'
+                      ? 'text-orange-500'
+                      : 'text-gray-400 group-hover:text-gray-600'
                       }`}
                   />
                   <span className="flex-1">{item.name}</span>
@@ -555,7 +555,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all duration-200"
-               />
+                />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Class/Grade</label>
@@ -601,8 +601,8 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
             {/* File Upload Area - Premium Drop Zone */}
             <div
               className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
-                  ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg scale-[1.01]'
-                  : 'border-gray-300 bg-gradient-to-br from-gray-50 to-white hover:border-orange-400 hover:shadow-md'
+                ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg scale-[1.01]'
+                : 'border-gray-300 bg-gradient-to-br from-gray-50 to-white hover:border-orange-400 hover:shadow-md'
                 }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -670,62 +670,96 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 <h2 className="text-lg font-bold text-gray-800">Configure Question Types</h2>
               </div>
 
+              {/* Desktop Header */}
+              <div className="hidden sm:grid grid-cols-12 gap-4 mb-3 text-xs font-semibold text-gray-500 px-2">
+                <div className="col-span-5">Question Type</div>
+                <div className="col-span-3 text-center">No. of Questions</div>
+                <div className="col-span-3 text-center">Marks per Question</div>
+                <div className="col-span-1"></div>
+              </div>
+
+              {/* Mobile Header */}
+              <div className="block sm:hidden mb-3 px-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold text-gray-500">Question Type</span>
+                  <div className="flex gap-6">
+                    <span className="text-xs font-semibold text-gray-500">Qty</span>
+                    <span className="text-xs font-semibold text-gray-500">Marks</span>
+                  </div>
+                </div>
+              </div>
+              {/* Question Types */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-gray-800">Question Type</span>
                   <div className="flex items-center gap-8 pr-2">
                     <span className="text-xs font-medium text-gray-500">No. of Questions</span>
                     <span className="text-xs font-medium text-gray-500">Marks</span>
-                  </div></div></div>
+                  </div>
+                </div>
 
-              <div className="space-y-3">
-                {formData.questionTypes.map((qt, index) => (
-                  <div key={index} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center bg-gray-50/50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none hover:bg-gray-50 transition-colors">
-                    {/* Question Type Select */}
-                    <div className="w-full sm:col-span-5">
-                      <select
-                        value={qt.type}
-                        onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white"
-                      >
-                        {questionTypeOptions.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
+                <div className="space-y-3">
+                  {formData.questionTypes.map((qt, index) => (
+                    <div key={index} className="flex flex-col sm:grid sm:grid-cols-12 gap-3 sm:gap-4 items-start sm:items-center bg-gray-50/50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none hover:bg-gray-50 transition-colors">
+                      {/* Question Type Select */}
+                      <div className="w-full sm:col-span-5">
+                        <select
+                          value={qt.type}
+                          onChange={(e) => updateQT(index, 'type', e.target.value)}
+                          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white"
+                        >
+                          {QUESTION_TYPE_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                    {/* Number of Questions Stepper */}
-                    <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
-                      <span className="text-xs text-gray-500 sm:hidden font-medium">Questions:</span>
-                      <Stepper
-                        value={qt.numberOfQuestions}
-                        onChange={(v) => updateQuestionType(index, 'numberOfQuestions', v)}
-                      />
-                    </div>
+                      {/* Number of Questions Stepper */}
+                      <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
+                        <span className="text-xs text-gray-500 sm:hidden font-medium">Questions:</span>
+                        <Stepper
+                          value={qt.numberOfQuestions}
+                          onChange={(v) => updateQT(index, 'numberOfQuestions', v)}
+                        />
+                      </div>
 
-                    {/* Marks Stepper */}
-                    <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
-                      <span className="text-xs text-gray-500 sm:hidden font-medium">Marks:</span>
-                      <Stepper
-                        value={qt.marksPerQuestion}
-                        onChange={(v) => updateQuestionType(index, 'marksPerQuestion', v)}
-                      />
-                    </div>
+                      {/* Marks Stepper */}
+                      <div className="flex items-center justify-between w-full sm:w-auto sm:col-span-3">
+                        <span className="text-xs text-gray-500 sm:hidden font-medium">Marks:</span>
+                        <Stepper
+                          value={qt.marksPerQuestion}
+                          onChange={(v) => updateQT(index, 'marksPerQuestion', v)}
+                        />
+                      </div>
 
-                    {/* Delete Button */}
-                    <div className="flex justify-end w-full sm:w-auto sm:col-span-1">
-                      {formData.questionTypes.length > 1 && (
+                      {/* Delete Button */}
+                      <div className="flex justify-end w-full sm:w-auto sm:col-span-1">
                         <button
                           type="button"
                           onClick={() => removeQuestionType(index)}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200"
                         >
-                          <Trash2 size={16} />
+                          <X size={12} />
                         </button>
-                      )}
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                <button type="button" onClick={addQuestionType}
+                  className="mt-4 flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                  <div className="w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
+                    <Plus size={13} className="text-white" />
                   </div>
-                ))}
+                  Add Question Type
+                </button>
+
+                {totalQuestions > 0 && (
+                  <div className="mt-4 flex flex-col items-end gap-0.5 text-sm font-medium text-gray-700">
+                    <span>Total Questions : {totalQuestions}</span>
+                    <span>Total Marks : {totalMarks}</span>
+                  </div>
+                )}
               </div>
 
               <button
