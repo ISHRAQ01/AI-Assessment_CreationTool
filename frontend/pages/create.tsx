@@ -683,7 +683,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                         onChange={(e) => updateQuestionType(index, 'type', e.target.value)}
                         className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-orange-400 focus:border-orange-400 bg-white"
                       >
-                        {QUESTION_TYPE_OPTIONS.map(opt => (
+                        {questionTypeOptions.map(opt => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
