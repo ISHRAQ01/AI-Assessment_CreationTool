@@ -15,11 +15,13 @@ interface QuestionType {
   marksPerQuestion: number;
 }
 
-const questionTypeOptions = [
+const QUESTION_TYPE_OPTIONS = [
   'Multiple Choice Questions',
   'Short Questions',
   'Diagram/Graph-Based Questions',
   'Numerical Problems',
+  'Long Answer Questions',
+  'Fill in the Blanks',
 ];
 
 // Stepper Component with manual input support - Enhanced
@@ -84,11 +86,13 @@ export default function CreateAssignment() {
   const [fileContent, setFileContent] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
-    subject: 'Science',
-    className: '5th',
+    subject: '',
+    className: '',
     dueDate: '',
     timeAllowed: 45,
-    questionTypes: [] as QuestionType[],
+    questionTypes: [
+      { type: '', numberOfQuestions: 5, marksPerQuestion: 1 },
+    ] as QuestionType[],
     additionalInstructions: '',
   });
 
@@ -547,15 +551,17 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Subject</label>
                 <input
                   type="text"
+                  placeholder="e.g., Science"
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all duration-200"
-                />
+               />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Class/Grade</label>
                 <input
                   type="text"
+                  placeholder="e.g. 8th"
                   value={formData.className}
                   onChange={(e) => setFormData({ ...formData, className: e.target.value })}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all duration-200"
