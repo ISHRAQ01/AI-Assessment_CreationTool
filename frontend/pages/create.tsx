@@ -15,7 +15,7 @@ interface QuestionType {
   marksPerQuestion: number;
 }
 
-const QUESTION_TYPE_OPTIONS = [
+const questionTypeOptions= [
   'Multiple Choice Questions',
   'Short Questions',
   'Diagram/Graph-Based Questions',
