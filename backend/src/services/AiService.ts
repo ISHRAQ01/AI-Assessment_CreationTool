@@ -7,11 +7,8 @@ const groq = new Groq({
 const AVAILABLE_MODELS = [
   process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
-  'llama3-70b-8192',
-  'llama3-8b-8192',
 ];
 
-// ✅ ONLY THIS ADDED - Helper function
 async function tryGenerateWithModel(prompt: string, model: string) {
   console.log(`🔄 Trying model: ${model}`);
   
