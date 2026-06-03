@@ -239,6 +239,9 @@ CRITICAL RULES
 3. For MCQ: Put options AND answer inside the "text" field using \\n. Format: "Question: text\\nA) option\\nB) option\\nC) option\\nD) option\\n[Answer: letter]"
 4. For Numerical: Provide the actual calculated answer.
 5. Return ONLY valid JSON.
+6. MCQ answers = single letter (A/B/C/D). Short/Numerical/Diagram answers = FULL text (2-5 sentences).
+7. Answer format: MCQ = single letter. All others = complete sentences (3-5 lines each).
+8. Answer Format: fill in the blanks = one word
 `;
 
   // ✅ ONLY THIS CHANGED - Model fallback instead of single model
