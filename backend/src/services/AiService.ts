@@ -111,16 +111,14 @@ QUESTION FORMAT BY TYPE
     prompt += `║ SECTION ${sectionLetter}: ${qt.type.toUpperCase()}                                                       ║\n`;
     prompt += `╚═══════════════════════════════════════════════════════════════════════════════╝\n`;
     
-    if (qt.type === 'Multiple Choice Questions') {
+        if (qt.type === 'Multiple Choice Questions') {
       prompt += `Write ${qt.numberOfQuestions} REAL Multiple Choice Questions about ${params.title}.
 
-Example of a GOOD MCQ:
-Question: What is the SI unit of force?
-A) Joule
-B) Watt
-C) Newton
-D) Pascal
-[Answer: C]
+CRITICAL: Put everything in ONE "text" field using this EXACT format:
+"Question: [question]\\nA) [optionA]\\nB) [optionB]\\nC) [optionC]\\nD) [optionD]\\n[Answer: correctLetter]"
+
+Example text field value:
+"Question: What is the SI unit of force?\\nA) Joule\\nB) Watt\\nC) Newton\\nD) Pascal\\n[Answer: C]"
 
 `;
     } 
@@ -238,7 +236,7 @@ CRITICAL RULES
 
 1. Write REAL, MEANINGFUL questions - NOT "Question 1:" or "Sample question".
 2. Each question MUST be based on "${params.title}" for ${params.subject}.
-3. For MCQ: Include A), B), C), D) options and [Answer: X].
+3. For MCQ: Put options AND answer inside the "text" field using \\n. Format: "Question: text\\nA) option\\nB) option\\nC) option\\nD) option\\n[Answer: letter]"
 4. For Numerical: Provide the actual calculated answer.
 5. Return ONLY valid JSON.
 `;
