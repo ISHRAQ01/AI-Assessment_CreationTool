@@ -95,12 +95,12 @@ export default function Sidebar({
         <Link href="/" className="flex items-center gap-2.5">
           <img 
             src="/profile.png" 
-            alt="VedaAI Logo" 
+            alt="AI Logo" 
             className="rounded-full object-cover w-9 h-9 sm:w-10 sm:h-10"
           />
           <div>
             <span className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">
-              VedaAI
+              AITeacher
             </span>
             <p className="text-[10px] text-gray-400 hidden sm:block">AI ASSESSMENT CREATOR</p>
           </div>

@@ -433,7 +433,7 @@ Generate ${formData.questionTypes.find(qt => qt.type === 'Multiple Choice Questi
               </div>
               <div>
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  VedaAI
+                  AITeacher
                 </span>
                 <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
                   <span className="w-1 h-1 bg-green-500 rounded-full"></span>

@@ -84,7 +84,7 @@ export default function ToolkitPage() {
                 Generate an assignment in 30 seconds
               </h2>
               <p className="text-sm text-gray-400">
-                Describe the topic and let VedaAI craft the perfect question paper.
+                Describe the topic and let AI craft the perfect question paper.
               </p>
             </div>
             <a

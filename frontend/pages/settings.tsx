@@ -29,7 +29,7 @@ const SECTIONS = [
     id: 'appearance',
     icon: Palette,
     title: 'Appearance',
-    description: 'Customise the look and feel of VedaAI.',
+    description: 'Customise the look and feel of AI.',
     color: 'text-purple-600 bg-purple-50',
   },
   {
