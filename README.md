@@ -1,4 +1,4 @@
-# VedaAI - AI Assessment Creator
+# AI Assessment Creator
 
 <div align="center">
   <p><em>Intelligent Question Paper Generation Powered by AI</em></p>
@@ -16,7 +16,7 @@
 
 ## 📋 Overview
 
-VedaAI is an intelligent assessment creation platform that leverages Groq's LLM API to automatically generate customized question papers. Built with modern web technologies, it provides a seamless experience for educators to create, manage, and distribute assessments.
+AITeacher is an intelligent assessment creation platform that leverages Groq's LLM API to automatically generate customized question papers. Built with modern web technologies, it provides a seamless experience for educators to create, manage, and distribute assessments.
 
 ## ✨ Features
 
@@ -102,7 +102,7 @@ MongoDB (optional): If not using Docker MongoDB, get connection string from Mong
 Step 1: Clone the Repository
 bash
 git clone https://github.com/ISHRAQ01/AI-Assessment_CreationTool.git
-cd vedaai
+cd AITeacher
 Step 2: Start MongoDB & Redis with Docker
 bash  or run only 
 # Start containers in detached mode
@@ -119,7 +119,7 @@ npm install
 Create .env file:
 PORT=5002
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/vedaai
+MONGODB_URI=mongodb://localhost:27017/aiteacher
 REDIS_URL=redis://localhost:6379
 GROQ_API_KEY=gsk_your_actual_api_key_here
 GROQ_MODEL=llama-3.1-70b-versatile
@@ -133,7 +133,7 @@ npm install
 Create .env.local file:
 NEXT_PUBLIC_API_URL=http://localhost:5002/api
 NEXT_PUBLIC_WS_URL=ws://localhost:5002
-NEXT_PUBLIC_APP_NAME=VedaAI
+NEXT_PUBLIC_APP_NAME=AIteacher
 
 Run the Application
 Open two terminals:
